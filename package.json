@@ -2,6 +2,10 @@
 	"name": "@u27n/core",
 	"version": "1.0.0",
 	"description": "Universal localization framework",
+	"author": "Max J. Polster",
+	"license": "MIT",
+	"repository": "https://github.com/mxjp/u27n-core.git",
+	"homepage": "https://github.com/mxjp/u27n-core",
 	"scripts": {
 		"clean": "rimraf ./dist/**/* ./test_out/**/*",
 		"build": "npm run clean && tsc -p tsconfig-dist.json",
