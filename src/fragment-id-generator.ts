@@ -2,18 +2,13 @@ import { base62encode } from "./utility/base62.js";
 
 export interface FragmentIdGenerator {
 	/**
-	 * Called to prepare the generator.
-	 *
-	 * @param fragmentToSources A readonly mapping of currently known fragment ids to sets of source ids that contain these fragments.
-	 */
-	prepare?(fragmentToSources: ReadonlyMap<string, ReadonlySet<string>>): void;
-
-	/**
 	 * Called to generate the next id.
 	 *
 	 * Subsequent calls must return values that have not been returned before.
+	 *
+	 * @param fragmentToSources A readonly mapping of currently known fragment ids to sets of source ids that contain these fragments.
 	 */
-	generate(): string;
+	generate(fragmentToSources: ReadonlyMap<string, ReadonlySet<string>>): string;
 }
 
 /**

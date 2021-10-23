@@ -12,11 +12,6 @@ export class Project {
 	private readonly _fragmentIdGenerator: FragmentIdGenerator;
 
 	/**
-	 * Indicates if the fragment id generator has been prepared.
-	 */
-	private _fragmentIdGeneratorPrepared = false;
-
-	/**
 	 * The current translation data view that is used.
 	 *
 	 * This is only modified while updates are processed.
@@ -74,11 +69,6 @@ export class Project {
 			this._sourceFragments.removeSource(sourceId);
 		});
 
-		if (!this._fragmentIdGeneratorPrepared) {
-			this._fragmentIdGeneratorPrepared = true;
-			this._fragmentIdGenerator.prepare?.(this._sourceFragments.fragmentToSources);
-		}
-
 		const assignedFragmentIds = new Set<string>();
 
 		update.updatedSources?.forEach((source, sourceId) => {
@@ -103,7 +93,7 @@ export class Project {
 
 						let id: string;
 						do {
-							id = generator.generate();
+							id = generator.generate(this._sourceFragments.fragmentToSources);
 						} while (assignedFragmentIds.has(id) || this._sourceFragments.hasFragment(id));
 						assignedFragmentIds.add(id);
 						return id;
