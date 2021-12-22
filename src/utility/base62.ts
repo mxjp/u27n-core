@@ -1,5 +1,5 @@
 
-const BASE62 = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+const BASE62 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
 export function base62encode(value: number): string {
 	if (!Number.isSafeInteger(value) || value < 0) {
