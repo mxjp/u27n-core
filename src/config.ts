@@ -8,6 +8,7 @@ export interface Config {
 	readonly include: string[];
 	readonly locales: string[];
 	readonly plugins: Config.Plugin[];
+	readonly output: string;
 }
 
 export namespace Config {
@@ -17,6 +18,7 @@ export namespace Config {
 		include?: string[];
 		locales?: string[];
 		plugins?: (string | PluginJson)[];
+		output?: string;
 	}
 
 	export interface PluginJson {
@@ -79,6 +81,8 @@ export namespace Config {
 			}
 		}
 
+		const output = resolve(context, json.output ?? "./dist/locale/[locale].json");
+
 		return {
 			context,
 			translationData,
@@ -86,6 +90,7 @@ export namespace Config {
 			include,
 			locales,
 			plugins,
+			output,
 		};
 	}
 }
