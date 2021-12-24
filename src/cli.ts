@@ -1,12 +1,22 @@
 #!/usr/bin/env node
 import { resolve } from "path";
+import parseArgv from "yargs-parser";
 
 import { Config } from "./config.js";
 import { Plugin, PluginContext, PluginModule } from "./plugin.js";
 import { Project } from "./project.js";
 
+interface Args extends parseArgv.Arguments {
+	config?: string;
+}
+
 (async () => {
-	const configFilename = resolve("./example/config.json");
+	const args = parseArgv(process.argv.slice(2), {
+		string: ["config"],
+	}) as Args;
+	console.log(args);
+
+	const configFilename = resolve(args.config ?? "u27n.json");
 	const config = await Config.read(configFilename);
 
 	const pluginContext: PluginContext = {
