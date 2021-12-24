@@ -1,3 +1,4 @@
+import { readFile } from "fs/promises";
 
 /**
  * Json format that contains translation data for a project.
@@ -57,4 +58,19 @@ export namespace TranslationData {
 	 * A pair of fragment id and translation set.
 	 */
 	export type ObsoleteItem = [string, Fragment];
+
+	/**
+	 * Read a translation data file.
+	 *
+	 * @returns The translation data object or undefined if the file does not exist.
+	 */
+	export async function read(filename: string): Promise<TranslationData | undefined> {
+		try {
+			return JSON.parse(await readFile(filename, "utf-8")) as TranslationData;
+		} catch (error) {
+			if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+				throw error;
+			}
+		}
+	}
 }

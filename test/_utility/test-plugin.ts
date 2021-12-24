@@ -12,6 +12,8 @@ export class TestPlugin implements Plugin {
 	}
 }
 
+export default TestPlugin;
+
 export declare namespace TestPlugin {
 	export interface Config {
 	}

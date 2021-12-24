@@ -20,6 +20,9 @@ test("foo", async t => {
 				"../../test_out/test/_utility/test-plugin",
 			],
 		}),
+		"src": {
+			"test.txt": `test 42`,
+		},
 	});
 
 	await exec(cwd, "node", [cliBin, "--config", "u27n.json"]);

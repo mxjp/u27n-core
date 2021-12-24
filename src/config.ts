@@ -1,5 +1,5 @@
 import { readFile } from "fs/promises";
-import { dirname, resolve } from "path";
+import { dirname, normalize, resolve } from "path";
 import resolveModule from "resolve";
 
 export interface Config {
@@ -44,7 +44,7 @@ export namespace Config {
 			throw new TypeError("namespace must be a string.");
 		}
 
-		const include = json.include ?? ["./src/**"];
+		const include = json.include ?? ["./src/**/*"];
 		if (!Array.isArray(include) || include.some(s => typeof s !== "string")) {
 			throw new TypeError("include must be an array of strings.");
 		}
@@ -61,11 +61,11 @@ export namespace Config {
 		if (!Array.isArray(json.plugins)) {
 			throw new TypeError("plugins must be an array.");
 		}
-		for (let i = 0; i < plugins.length; i++) {
+		for (let i = 0; i < json.plugins.length; i++) {
 			let entry: string;
 			let config: unknown;
 
-			const pluginJson = plugins[i];
+			const pluginJson = json.plugins[i];
 			if (typeof pluginJson === "string") {
 				entry = pluginJson;
 				config = {};
@@ -86,7 +86,7 @@ export namespace Config {
 					if (error) {
 						reject(error);
 					} else {
-						resolve(entry!);
+						resolve(normalize(entry!));
 					}
 				});
 			});
