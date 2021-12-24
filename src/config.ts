@@ -8,7 +8,7 @@ export interface Config {
 	readonly include: string[];
 	readonly locales: string[];
 	readonly plugins: Config.Plugin[];
-	readonly output: string;
+	readonly output: string | null;
 }
 
 export namespace Config {
@@ -62,6 +62,7 @@ export namespace Config {
 		}
 		for (let i = 0; i < plugins.length; i++) {
 			const pluginJson = plugins[i];
+			// TODO: Resolve plugin module path.
 			if (typeof pluginJson === "string") {
 				plugins.push({
 					entry: pluginJson,
@@ -81,7 +82,7 @@ export namespace Config {
 			}
 		}
 
-		const output = resolve(context, json.output ?? "./dist/locale/[locale].json");
+		const output = json.output ? resolve(context, json.output ?? "./dist/locale/[locale].json") : null;
 
 		return {
 			context,

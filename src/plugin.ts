@@ -1,7 +1,8 @@
 import type { Config } from "./config.js";
+import { Project } from "./project.js";
 import type { Source } from "./source.js";
 
-export interface PluginContext {
+export interface PluginContext extends Project.Options {
 	/**
 	 * The global configuration.
 	 */
