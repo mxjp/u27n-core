@@ -1,5 +1,6 @@
 import { readFile } from "fs/promises";
 import { dirname, resolve } from "path";
+import * as resolveModule from "resolve";
 
 export interface Config {
 	readonly context: string;
@@ -35,7 +36,7 @@ export namespace Config {
 		return fromJson(JSON.parse(await readFile(filename, "utf-8")) as Json, dirname(filename));
 	}
 
-	export function fromJson(json: Json, context: string): Config {
+	export async function fromJson(json: Json, context: string): Promise<Config> {
 		const translationData = resolve(context, json.translationData ?? "./u27n-data.json");
 
 		const namespace = json.namespace ?? "";
@@ -61,25 +62,35 @@ export namespace Config {
 			throw new TypeError("plugins must be an array.");
 		}
 		for (let i = 0; i < plugins.length; i++) {
+			let entry: string;
+			let config: unknown;
+
 			const pluginJson = plugins[i];
-			// TODO: Resolve plugin module path.
 			if (typeof pluginJson === "string") {
-				plugins.push({
-					entry: pluginJson,
-					config: {},
-				});
+				entry = pluginJson;
+				config = {};
 			} else if (typeof pluginJson === "object" && pluginJson !== null && !Array.isArray(pluginJson)) {
-				const entry = pluginJson.entry;
+				entry = pluginJson.entry;
 				if (typeof entry !== "string") {
 					throw new TypeError(`plugins[${i}].entry must be a string`);
 				}
-				plugins.push({
-					entry,
-					config: pluginJson.config ?? {},
-				});
 			} else {
 				throw new TypeError(`plugins[${i}] must be a string or an object.`);
 			}
+			// eslint-disable-next-line require-atomic-updates
+			entry = await new Promise<string>((resolve, reject) => {
+				resolveModule(entry, {
+					basedir: context,
+					includeCoreModules: false,
+				}, (error, entry) => {
+					if (error) {
+						reject(error);
+					} else {
+						resolve(entry!);
+					}
+				});
+			});
+			plugins.push({ entry, config });
 		}
 
 		const output = json.output ? resolve(context, json.output ?? "./dist/locale/[locale].json") : null;

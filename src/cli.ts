@@ -17,7 +17,7 @@ import { Project } from "./project.js";
 	for (const pluginConfig of config.plugins) {
 		const module = await import(pluginConfig.entry) as PluginModule;
 		const plugin = typeof module.default === "function" ? new module.default() : module.default;
-		await plugin.setup(pluginContext, pluginConfig.config);
+		await plugin.setup?.(pluginContext, pluginConfig.config);
 		plugins.push(plugin);
 	}
 

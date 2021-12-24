@@ -16,7 +16,7 @@ export interface Plugin {
 	 * @param context The plugin context.
 	 * @param config The plugin configuration.
 	 */
-	setup(context: PluginContext, config: unknown): void | Promise<void>;
+	setup?(context: PluginContext, config: unknown): void | Promise<void>;
 
 	/**
 	 * Called to try to create s source for the specified file.
