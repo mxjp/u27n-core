@@ -6,9 +6,16 @@
 	"license": "MIT",
 	"repository": "https://github.com/mxjp/u27n-core.git",
 	"homepage": "https://github.com/mxjp/u27n-core",
+	"main": "./dist/cjs/index.js",
+	"module": "./dist/es/index.js",
+	"bin": {
+		"u27n": "./dist/cjs/cli.js"
+	},
 	"scripts": {
 		"clean": "rimraf ./dist/**/* ./test_out/**/*",
-		"build": "npm run clean && tsc -p tsconfig-dist.json",
+		"build": "concurrently npm:build:*",
+		"build:es": "npm run clean && tsc -p tsconfig-es.json",
+		"build:cjs": "npm run clean && tsc -p tsconfig-cjs.json",
 		"test": "npm run clean && tsc -p tsconfig-test.json && ava -v",
 		"start": "npm run clean && tsc -p tsconfig-test.json && concurrently \"tsc -p tsconfig-test.json -w\" \"ava -v -w\"",
 		"lint": "eslint --config .eslintrc.json ./src/**/* ./test/**/*",
