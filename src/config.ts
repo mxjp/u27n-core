@@ -1,6 +1,6 @@
 import { readFile } from "fs/promises";
 import { dirname, resolve } from "path";
-import * as resolveModule from "resolve";
+import resolveModule from "resolve";
 
 export interface Config {
 	readonly context: string;

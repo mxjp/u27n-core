@@ -12,7 +12,7 @@
 		"u27n": "./dist/cjs/cli.js"
 	},
 	"scripts": {
-		"clean": "rimraf ./dist/**/* ./test_out/**/*",
+		"clean": "rimraf ./dist/**/* ./test_out/**/* ./test_data/**/*",
 		"build": "concurrently npm:build:*",
 		"build:es": "npm run clean && tsc -p tsconfig-es.json",
 		"build:cjs": "npm run clean && tsc -p tsconfig-cjs.json",
