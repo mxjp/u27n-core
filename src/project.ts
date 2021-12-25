@@ -1,4 +1,3 @@
-
 import { Config } from "./config.js";
 import { DataProcessor } from "./data-processor.js";
 import { Diagnostic } from "./index.js";

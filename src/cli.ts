@@ -4,10 +4,7 @@ import { relative, resolve } from "path";
 import parseArgv from "yargs-parser";
 
 import { Config } from "./config.js";
-import { getDiagnosticLocation } from "./diagnostics/location.js";
-import { getDiagnosticMessage } from "./diagnostics/messages.js";
-import { DiagnosticSeverity, getDiagnosticSeverity } from "./diagnostics/severity.js";
-import { Diagnostic } from "./index.js";
+import { Diagnostic, DiagnosticSeverity, getDiagnosticLocation, getDiagnosticMessage, getDiagnosticSeverity } from "./diagnostics.js";
 import { Project } from "./project.js";
 import { NodeFileSystem } from "./utility/file-system-node.js";
 

@@ -2,7 +2,7 @@ import { readFile } from "fs/promises";
 import { dirname, normalize, resolve } from "path";
 import resolveModule from "resolve";
 
-import { DiagnosticSeverityConfig, DiagnosticType, diagnosticTypes } from "./diagnostics/index.js";
+import { DiagnosticSeverityConfig, DiagnosticType, diagnosticTypes } from "./diagnostics.js";
 
 export interface Config {
 	readonly context: string;
