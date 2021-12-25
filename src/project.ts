@@ -12,7 +12,6 @@ export class Project {
 	public readonly fileSystem: FileSystem;
 	public readonly dataProcessor: DataProcessor;
 
-	readonly #onDiagnostic: Project.DiagnosticHandler;
 	readonly #plugins: Plugin[] = [];
 	readonly #pluginContext: PluginContext;
 
@@ -23,7 +22,6 @@ export class Project {
 	) {
 		this.config = options.config;
 		this.fileSystem = options.fileSystem;
-		this.#onDiagnostic = options.onDiagnostic;
 		this.dataProcessor = dataProcessor;
 		this.#plugins = plugins;
 		this.#pluginContext = {
@@ -41,6 +39,7 @@ export class Project {
 			],
 			onError: options.onError,
 			onChange: async changes => {
+				const diagnostics: Diagnostic[] = [];
 				const updatedSources = new Map<string, Source>();
 				const removedSources = new Set<string>();
 				let translationData: TranslationData | undefined = undefined;
@@ -55,10 +54,10 @@ export class Project {
 						const source = await this.#createSource(filename);
 						const sourceId = Source.filenameToSourceId(this.config.context, filename);
 						if (source === undefined) {
-							this.#onDiagnostic({
+							diagnostics.push({
 								type: "unsupportedSource",
 								sourceId,
-							}, this);
+							});
 						} else {
 							updatedSources.set(sourceId, source);
 						}
@@ -90,12 +89,14 @@ export class Project {
 				if (options.output) {
 					// TODO: Write output.
 				}
+
+				options.onDiagnostics?.(diagnostics);
 			},
 		});
 	}
 
-	public async run(options: Project.RunOptions): Promise<void> {
-		// const translationData = await TranslationData.read(config.translationData);
+	public async run(options: Project.RunOptions): Promise<Project.RunResult> {
+		const diagnostics: Diagnostic[] = [];
 		const translationDataJson = await this.fileSystem.readOptionalFile(this.config.translationData);
 		const translationData = translationDataJson === undefined ? undefined : TranslationData.parseJson(translationDataJson);
 
@@ -107,10 +108,10 @@ export class Project {
 			const source = await this.#createSource(filename);
 			const sourceId = Source.filenameToSourceId(this.config.context, filename);
 			if (source === undefined) {
-				this.#onDiagnostic({
+				diagnostics.push({
 					type: "unsupportedSource",
 					sourceId,
-				}, this);
+				});
 			} else {
 				sources.set(sourceId, source);
 			}
@@ -130,14 +131,16 @@ export class Project {
 				await this.fileSystem.writeFile(Source.sourceIdToFilename(this.config.context, sourceId), content);
 			}
 		} else if (this.dataProcessor.translationDataModified || result.modifiedSources.size > 0) {
-			this.#onDiagnostic({
+			diagnostics.push({
 				type: "projectOutOfSync",
-			}, this);
+			});
 		}
 
 		if (options.output) {
 			// TODO: Write output.
 		}
+
+		return { diagnostics };
 	}
 
 	async #createSource(filename: string): Promise<Source | undefined> {
@@ -173,19 +176,21 @@ export declare namespace Project {
 	export interface Options {
 		config: Config;
 		fileSystem: FileSystem;
-		onDiagnostic: DiagnosticHandler;
 	}
-
-	export type DiagnosticHandler = (diagnostic: Diagnostic, project: Project) => void;
 
 	export interface WatchOptions {
 		output: boolean;
 		modify: boolean;
+		onDiagnostics?: (diagnostics: Diagnostic[]) => void;
 		onError?: (error: unknown) => void;
 	}
 
 	export interface RunOptions {
 		output: boolean;
 		modify: boolean;
+	}
+
+	export interface RunResult {
+		diagnostics: Diagnostic[];
 	}
 }
