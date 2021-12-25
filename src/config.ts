@@ -2,6 +2,8 @@ import { readFile } from "fs/promises";
 import { dirname, normalize, resolve } from "path";
 import resolveModule from "resolve";
 
+import { DiagnosticSeverityConfig, DiagnosticType, diagnosticTypes } from "./diagnostics/index.js";
+
 export interface Config {
 	readonly context: string;
 	readonly translationData: string;
@@ -10,6 +12,7 @@ export interface Config {
 	readonly locales: string[];
 	readonly plugins: Config.Plugin[];
 	readonly output: string | null;
+	readonly diagnostics: DiagnosticSeverityConfig;
 }
 
 export namespace Config {
@@ -20,6 +23,7 @@ export namespace Config {
 		locales?: string[];
 		plugins?: (string | PluginJson)[];
 		output?: string;
+		diagnostics?: DiagnosticSeverityConfig;
 	}
 
 	export interface PluginJson {
@@ -95,6 +99,16 @@ export namespace Config {
 
 		const output = json.output ? resolve(context, json.output ?? "./dist/locale/[locale].json") : null;
 
+		const diagnostics = json.diagnostics ?? {};
+		if (typeof diagnostics !== "object" || diagnostics === null || Array.isArray(diagnostics)) {
+			throw new TypeError(`diagnostics must be an object.`);
+		}
+		for (const type in diagnostics) {
+			if (type !== "*" && !diagnosticTypes.has(type as DiagnosticType)) {
+				throw new TypeError(`unknown diagnostic type: ${JSON.stringify(type)}`);
+			}
+		}
+
 		return {
 			context,
 			translationData,
@@ -103,6 +117,7 @@ export namespace Config {
 			locales,
 			plugins,
 			output,
+			diagnostics,
 		};
 	}
 }

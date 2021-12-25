@@ -51,6 +51,13 @@ export class Project {
 	}
 
 	/**
+	 * Get a source instance for the specified source id.
+	 */
+	public getSource(sourceId: string): Source | undefined {
+		return this.#sources.get(sourceId);
+	}
+
+	/**
 	 * Apply updates from disk to the project.
 	 */
 	public applyUpdate(update: Project.Update): Project.UpdateResult {

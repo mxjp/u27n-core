@@ -1,10 +1,15 @@
 #!/usr/bin/env node
+import colors from "ansi-colors";
 import { readFile, writeFile } from "fs/promises";
-import { resolve } from "path";
+import { relative, resolve } from "path";
 import parseArgv from "yargs-parser";
 
 import { Config } from "./config.js";
-import { Plugin, PluginContext, PluginModule } from "./plugin.js";
+import { getDiagnosticLocation } from "./diagnostics/location.js";
+import { getDiagnosticMessage } from "./diagnostics/messages.js";
+import { DiagnosticSeverity, getDiagnosticSeverity } from "./diagnostics/severity.js";
+import { Diagnostic } from "./diagnostics/types.js";
+import { Plugin, PluginContext, PluginModule, SetupPluginContext } from "./plugin.js";
 import { Project } from "./project.js";
 import { Source } from "./source.js";
 import { TranslationData } from "./translation-data.js";
@@ -16,6 +21,12 @@ interface Args extends parseArgv.Arguments {
 	output?: boolean;
 	modify?: boolean;
 }
+
+const diagnosticColors = new Map<DiagnosticSeverity, colors.StyleFunction>([
+	["error", colors.red],
+	["warning", colors.yellow],
+	["info", colors.cyan],
+]);
 
 (async () => {
 	const args = parseArgv(process.argv.slice(2), {
@@ -29,29 +40,64 @@ interface Args extends parseArgv.Arguments {
 	const configFilename = resolve(args.config ?? "u27n.json");
 	const config = await Config.read(configFilename);
 
-	const pluginContext: PluginContext = {
-		config,
-	};
+	const setupPluginContext: SetupPluginContext = { config };
 
 	const plugins: Plugin[] = [];
 	for (const pluginConfig of config.plugins) {
 		const module = await import(pluginConfig.entry) as PluginModule;
 		const plugin = typeof module.default === "function" ? new module.default() : module.default;
-		await plugin.setup?.(pluginContext, pluginConfig.config);
+		await plugin.setup?.(setupPluginContext, pluginConfig.config);
 		plugins.push(plugin);
 	}
+
+	const project = new Project(setupPluginContext);
+	const pluginContext: PluginContext = { config, project };
 
 	async function createSource(filename: string): Promise<Source | undefined> {
 		const content = await readFile(filename, "utf-8");
 		for (const plugin of plugins) {
-			const source = plugin.createSource?.(filename, content) as Source | undefined;
+			const source = plugin.createSource?.(filename, content, pluginContext) as Source | undefined;
 			if (source !== undefined) {
 				return source;
 			}
 		}
 	}
 
-	const project = new Project(pluginContext);
+	function emitDiagnostic(diagnostic: Diagnostic) {
+		function formatFilename(filename: string) {
+			return relative(process.cwd(), filename);
+		}
+
+		const severity = getDiagnosticSeverity(config.diagnostics, diagnostic.type);
+		if (severity !== "ignore") {
+			const location = getDiagnosticLocation(config.context, project, diagnostic);
+			const message = getDiagnosticMessage(diagnostic);
+			const color = diagnosticColors.get(severity) ?? (value => value);
+
+			let text = `${color(severity)}: ${message}`;
+			switch (location.type) {
+				case "file":
+					text += ` in ${formatFilename(location.filename)}`;
+					break;
+
+				case "fragment":
+					text += ` in ${formatFilename(location.filename)}`;
+					if (location.source) {
+						const position = location.source.lineMap.getPosition(location.start);
+						if (position !== null) {
+							text += `:${position.line + 1}:${position.character + 1}`;
+						}
+					}
+					break;
+			}
+
+			console.log(text);
+		}
+
+		if (severity === "error") {
+			process.exitCode = 1;
+		}
+	}
 
 	if (watch) {
 		watchFiles({
@@ -71,10 +117,14 @@ interface Args extends parseArgv.Arguments {
 						translationData = await TranslationData.read(config.translationData);
 					} else {
 						const source = await createSource(filename);
+						const sourceId = Source.filenameToSourceId(config.context, filename);
 						if (source === undefined) {
-							// TODO: Emit diagnostic for unsupported source.
+							emitDiagnostic({
+								type: "unsupportedSource",
+								sourceId,
+							});
 						} else {
-							updatedSources.set(Source.filenameToSourceId(config.context, filename), source);
+							updatedSources.set(sourceId, source);
 						}
 					}
 				}
@@ -113,10 +163,14 @@ interface Args extends parseArgv.Arguments {
 		const sources = new Map<string, Source>();
 		for (const filename of await findFiles(config.context, config.include)) {
 			const source = await createSource(filename);
+			const sourceId = Source.filenameToSourceId(config.context, filename);
 			if (source === undefined) {
-				// TODO: Emit diagnostic for unsupported source.
+				emitDiagnostic({
+					type: "unsupportedSource",
+					sourceId,
+				});
 			} else {
-				sources.set(Source.filenameToSourceId(config.context, filename), source);
+				sources.set(sourceId, source);
 			}
 		}
 
@@ -134,13 +188,10 @@ interface Args extends parseArgv.Arguments {
 			for (const [sourceId, content] of result.modifiedSources) {
 				await writeFile(Source.sourceIdToFilename(config.context, sourceId), content);
 			}
-		} else {
-			if (project.translationDataModified) {
-				// TODO: Emit diagnostic for out of sync translation data.
-			}
-			if (result.modifiedSources.size > 0) {
-				// TODO: Emit diagnostic for out of sync sources.
-			}
+		} else if (project.translationDataModified || result.modifiedSources.size > 0) {
+			emitDiagnostic({
+				type: "projectOutOfSync",
+			});
 		}
 
 		if (output) {
