@@ -4,7 +4,7 @@ import type { TranslationData } from "./translation-data.js";
 import { SourceFragmentMap } from "./utility/source-fragment-map.js";
 import { TranslationDataView } from "./utility/translation-data-view.js";
 
-export class Project {
+export class DataProcessor {
 	/**
 	 * The default fragment id generator that is used if
 	 * the source does not provide it's own generator.
@@ -28,7 +28,7 @@ export class Project {
 	 */
 	readonly #sourceFragments = new SourceFragmentMap();
 
-	public constructor(options: Project.Options = {}) {
+	public constructor(options: DataProcessor.Options = {}) {
 		this.#fragmentIdGenerator = options.fragmentIdGenerator ?? new Base62FragmentIdGenerator();
 	}
 
@@ -60,7 +60,7 @@ export class Project {
 	/**
 	 * Apply updates from disk to the project.
 	 */
-	public applyUpdate(update: Project.Update): Project.UpdateResult {
+	public applyUpdate(update: DataProcessor.Update): DataProcessor.UpdateResult {
 		const modifiedSources = new Map<string, string>();
 
 		if (update.translationData) {
@@ -149,7 +149,7 @@ export class Project {
 	}
 }
 
-export declare namespace Project {
+export declare namespace DataProcessor {
 	export interface Options {
 		/**
 		 * The fragment id generator to use.

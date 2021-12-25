@@ -5,12 +5,12 @@ import { relative, resolve } from "path";
 import parseArgv from "yargs-parser";
 
 import { Config } from "./config.js";
+import { DataProcessor } from "./data-processor.js";
 import { getDiagnosticLocation } from "./diagnostics/location.js";
 import { getDiagnosticMessage } from "./diagnostics/messages.js";
 import { DiagnosticSeverity, getDiagnosticSeverity } from "./diagnostics/severity.js";
 import { Diagnostic } from "./diagnostics/types.js";
 import { Plugin, PluginContext, PluginModule, SetupPluginContext } from "./plugin.js";
-import { Project } from "./project.js";
 import { Source } from "./source.js";
 import { TranslationData } from "./translation-data.js";
 import { findFiles, watchFiles } from "./utility/file-system.js";
@@ -50,8 +50,8 @@ const diagnosticColors = new Map<DiagnosticSeverity, colors.StyleFunction>([
 		plugins.push(plugin);
 	}
 
-	const project = new Project(setupPluginContext);
-	const pluginContext: PluginContext = { config, project };
+	const dataProcessor = new DataProcessor(setupPluginContext);
+	const pluginContext: PluginContext = { config, dataProcessor };
 
 	async function createSource(filename: string): Promise<Source | undefined> {
 		const content = await readFile(filename, "utf-8");
@@ -70,7 +70,7 @@ const diagnosticColors = new Map<DiagnosticSeverity, colors.StyleFunction>([
 
 		const severity = getDiagnosticSeverity(config.diagnostics, diagnostic.type);
 		if (severity !== "ignore") {
-			const location = getDiagnosticLocation(config.context, project, diagnostic);
+			const location = getDiagnosticLocation(config.context, dataProcessor, diagnostic);
 			const message = getDiagnosticMessage(diagnostic);
 			const color = diagnosticColors.get(severity) ?? (value => value);
 
@@ -135,16 +135,16 @@ const diagnosticColors = new Map<DiagnosticSeverity, colors.StyleFunction>([
 					}
 				}
 
-				const result = project.applyUpdate({
+				const result = dataProcessor.applyUpdate({
 					updatedSources,
 					removedSources,
 					translationData,
 				});
 
 				if (modify) {
-					if (project.translationDataModified) {
-						project.translationDataModified = false;
-						await TranslationData.write(config.translationData, project.translationData);
+					if (dataProcessor.translationDataModified) {
+						dataProcessor.translationDataModified = false;
+						await TranslationData.write(config.translationData, dataProcessor.translationData);
 					}
 
 					for (const [sourceId, content] of result.modifiedSources) {
@@ -174,21 +174,21 @@ const diagnosticColors = new Map<DiagnosticSeverity, colors.StyleFunction>([
 			}
 		}
 
-		const result = project.applyUpdate({
+		const result = dataProcessor.applyUpdate({
 			translationData,
 			updatedSources: sources,
 		});
 
 		if (modify) {
-			if (project.translationDataModified) {
-				project.translationDataModified = false;
-				await TranslationData.write(config.translationData, project.translationData);
+			if (dataProcessor.translationDataModified) {
+				dataProcessor.translationDataModified = false;
+				await TranslationData.write(config.translationData, dataProcessor.translationData);
 			}
 
 			for (const [sourceId, content] of result.modifiedSources) {
 				await writeFile(Source.sourceIdToFilename(config.context, sourceId), content);
 			}
-		} else if (project.translationDataModified || result.modifiedSources.size > 0) {
+		} else if (dataProcessor.translationDataModified || result.modifiedSources.size > 0) {
 			emitDiagnostic({
 				type: "projectOutOfSync",
 			});

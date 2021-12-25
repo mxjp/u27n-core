@@ -1,4 +1,4 @@
-import { Project } from "../project.js";
+import { DataProcessor } from "../data-processor.js";
 import { Source } from "../source.js";
 import { Diagnostic } from "./types.js";
 
@@ -27,12 +27,12 @@ export interface FragmentDiagnosticLocation {
 	end: number;
 }
 
-export function getDiagnosticLocation(rootDir: string, project: Project, diagnostic: Diagnostic): DiagnosticLocation {
+export function getDiagnosticLocation(rootDir: string, dataProcessor: DataProcessor, diagnostic: Diagnostic): DiagnosticLocation {
 	switch (diagnostic.type) {
 		case "missingTranslations":
 		case "outdatedTranslations":
 		case "unknownTranslations": {
-			const source = project.getSource(diagnostic.sourceId);
+			const source = dataProcessor.getSource(diagnostic.sourceId);
 			const filename = Source.sourceIdToFilename(rootDir, diagnostic.sourceId);
 			if (source === undefined) {
 				return {

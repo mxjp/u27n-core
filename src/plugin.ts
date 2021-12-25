@@ -1,8 +1,8 @@
 import type { Config } from "./config.js";
-import { Project } from "./project.js";
+import { DataProcessor } from "./data-processor.js";
 import type { Source } from "./source.js";
 
-export interface SetupPluginContext extends Project.Options {
+export interface SetupPluginContext extends DataProcessor.Options {
 	/** The global configuration. */
 	readonly config: Config;
 }
@@ -10,8 +10,8 @@ export interface SetupPluginContext extends Project.Options {
 export interface PluginContext {
 	/** The global configuration. */
 	readonly config: Config;
-	/** The global project. */
-	readonly project: Project;
+	/** The global data processor. */
+	readonly dataProcessor: DataProcessor;
 }
 
 export interface Plugin {

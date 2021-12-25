@@ -1,6 +1,6 @@
 import test, { ExecutionContext } from "ava";
 
-import { Project } from "../src/project.js";
+import { DataProcessor } from "../src/data-processor.js";
 import { TranslationData } from "../src/translation-data.js";
 import { ManagedTestSource } from "./_utility/managed-test-source.js";
 import { unindent } from "./_utility/unindent.js";
@@ -40,15 +40,15 @@ function source(code: string): string {
 	return unindent(code).trim();
 }
 
-test(`${Project.prototype.applyUpdate.name} (empty update)`, t => {
-	const project = new Project();
-	const result = project.applyUpdate({});
+test(`${DataProcessor.prototype.applyUpdate.name} (empty update)`, t => {
+	const dataProcessor = new DataProcessor();
+	const result = dataProcessor.applyUpdate({});
 	t.is(result.modifiedSources.size, 0);
-	t.false(project.translationDataModified);
+	t.false(dataProcessor.translationDataModified);
 });
 
-test(`${Project.prototype.applyUpdate.name} (state in sync)`, t => {
-	const project = new Project();
+test(`${DataProcessor.prototype.applyUpdate.name} (state in sync)`, t => {
+	const project = new DataProcessor();
 	const result = project.applyUpdate({
 		updatedSources: new Map([
 			["a", new ManagedTestSource(`
@@ -71,8 +71,8 @@ test(`${Project.prototype.applyUpdate.name} (state in sync)`, t => {
 	t.is(result.modifiedSources.size, 0);
 });
 
-test(`${Project.prototype.applyUpdate.name} (missing id)`, async t => {
-	const project = new Project();
+test(`${DataProcessor.prototype.applyUpdate.name} (missing id)`, async t => {
+	const project = new DataProcessor();
 	const result = project.applyUpdate({
 		updatedSources: new Map([
 			["a", new ManagedTestSource(`
@@ -106,8 +106,8 @@ test(`${Project.prototype.applyUpdate.name} (missing id)`, async t => {
 	]));
 });
 
-test(`${Project.prototype.applyUpdate.name} (duplicate id, multiple sources, no data)`, async t => {
-	const project = new Project();
+test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, multiple sources, no data)`, async t => {
+	const project = new DataProcessor();
 	const result = project.applyUpdate({
 		updatedSources: new Map([
 			["a", new ManagedTestSource(`
@@ -135,8 +135,8 @@ test(`${Project.prototype.applyUpdate.name} (duplicate id, multiple sources, no 
 	]));
 });
 
-test(`${Project.prototype.applyUpdate.name} (duplicate id, single source, no data)`, async t => {
-	const project = new Project();
+test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, single source, no data)`, async t => {
+	const project = new DataProcessor();
 	const result = project.applyUpdate({
 		updatedSources: new Map([
 			["a", new ManagedTestSource(`
@@ -160,8 +160,8 @@ test(`${Project.prototype.applyUpdate.name} (duplicate id, single source, no dat
 	]));
 });
 
-test(`${Project.prototype.applyUpdate.name} (duplicate id, multiple sources, data in sync)`, async t => {
-	const project = new Project();
+test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, multiple sources, data in sync)`, async t => {
+	const project = new DataProcessor();
 	const result = project.applyUpdate({
 		updatedSources: new Map([
 			["a", new ManagedTestSource(`
@@ -191,8 +191,8 @@ test(`${Project.prototype.applyUpdate.name} (duplicate id, multiple sources, dat
 	]));
 });
 
-test(`${Project.prototype.applyUpdate.name} (duplicate id, single source, data in sync)`, async t => {
-	const project = new Project();
+test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, single source, data in sync)`, async t => {
+	const project = new DataProcessor();
 	const result = project.applyUpdate({
 		updatedSources: new Map([
 			["a", new ManagedTestSource(`
@@ -221,8 +221,8 @@ test(`${Project.prototype.applyUpdate.name} (duplicate id, single source, data i
 	]));
 });
 
-test(`${Project.prototype.applyUpdate.name} (duplicate id, multiple sources, data out of sync)`, async t => {
-	const project = new Project();
+test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, multiple sources, data out of sync)`, async t => {
+	const project = new DataProcessor();
 	const result = project.applyUpdate({
 		updatedSources: new Map([
 			["a", new ManagedTestSource(`
@@ -255,8 +255,8 @@ test(`${Project.prototype.applyUpdate.name} (duplicate id, multiple sources, dat
 	]));
 });
 
-test(`${Project.prototype.applyUpdate.name} (duplicate id, single source, data out of sync)`, async t => {
-	const project = new Project();
+test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, single source, data out of sync)`, async t => {
+	const project = new DataProcessor();
 	const result = project.applyUpdate({
 		updatedSources: new Map([
 			["a", new ManagedTestSource(`
@@ -285,8 +285,8 @@ test(`${Project.prototype.applyUpdate.name} (duplicate id, single source, data o
 	]));
 });
 
-test(`${Project.prototype.applyUpdate.name} (remove source)`, t => {
-	const project = new Project();
+test(`${DataProcessor.prototype.applyUpdate.name} (remove source)`, t => {
+	const project = new DataProcessor();
 
 	project.applyUpdate({
 		updatedSources: new Map([
@@ -310,8 +310,8 @@ test(`${Project.prototype.applyUpdate.name} (remove source)`, t => {
 	verifyFragments(t, project.translationData, {});
 });
 
-test(`${Project.prototype.applyUpdate.name} (missing source)`, t => {
-	const project = new Project();
+test(`${DataProcessor.prototype.applyUpdate.name} (missing source)`, t => {
+	const project = new DataProcessor();
 	const result = project.applyUpdate({
 		translationData: translationData({
 			fragments: {
