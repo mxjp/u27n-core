@@ -1,3 +1,4 @@
+import chokidar from "chokidar";
 import { readdir } from "fs/promises";
 import { join, relative, sep } from "path";
 import createMatcher, { Matcher, scan } from "picomatch";
@@ -40,4 +41,82 @@ export async function findFiles(cwd: string, patterns: string[]): Promise<string
 		})(basedir);
 	}
 	return files;
+}
+
+export function watchFiles(options: WatchFileOptions): chokidar.FSWatcher {
+	const watcher = chokidar.watch(options.patterns, { cwd: options.cwd });
+
+	let ready = false;
+	let handling = false;
+
+	const updated = new Set<string>();
+	const deleted = new Set<string>();
+
+	function handleChanges() {
+		if (ready && !handling) {
+			handling = true;
+			void (async () => {
+				while (updated.size > 0 || deleted.size > 0) {
+					try {
+						const changes: WatchFileOptions.Changes = {
+							updated: Array.from(updated),
+							removed: Array.from(deleted),
+						};
+						updated.clear();
+						deleted.clear();
+						await options.onChange(changes);
+					} catch (error) {
+						options.onError?.(error);
+					}
+				}
+				handling = false;
+			})();
+		}
+	}
+
+	watcher.on("add", filename => {
+		filename = join(options.cwd, filename);
+		updated.add(filename);
+		deleted.delete(filename);
+		handleChanges();
+	});
+
+	watcher.on("change", filename => {
+		filename = join(options.cwd, filename);
+		updated.add(filename);
+		deleted.delete(filename);
+		handleChanges();
+	});
+
+	watcher.on("unlink", filename => {
+		filename = join(options.cwd, filename);
+		updated.delete(filename);
+		deleted.add(filename);
+		handleChanges();
+	});
+
+	watcher.on("ready", () => {
+		ready = true;
+		handleChanges();
+	});
+
+	watcher.on("error", error => {
+		options.onError?.(error);
+	});
+
+	return watcher;
+}
+
+export interface WatchFileOptions {
+	cwd: string;
+	patterns: string[];
+	onChange: (changes: WatchFileOptions.Changes) => Promise<void>;
+	onError?: (error: unknown) => void;
+}
+
+export declare namespace WatchFileOptions {
+	export interface Changes {
+		readonly updated: string[];
+		readonly removed: string[];
+	}
 }

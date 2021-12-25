@@ -2,8 +2,7 @@
 
 export default {
 	files: [
-		// "./test_out/test/**/*.js",
-		"./test_out/test/cli.js",
+		"./test_out/test/**/*.js",
 		"!**/_*/*",
 	],
 	ignoredByWatcher: [

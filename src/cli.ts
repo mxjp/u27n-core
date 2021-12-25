@@ -8,15 +8,17 @@ import { Plugin, PluginContext, PluginModule } from "./plugin.js";
 import { Project } from "./project.js";
 import { Source } from "./source.js";
 import { TranslationData } from "./translation-data.js";
-import { findFiles } from "./utility/file-system.js";
+import { findFiles, watchFiles } from "./utility/file-system.js";
 
 interface Args extends parseArgv.Arguments {
 	config?: string;
+	watch?: boolean;
 }
 
 (async () => {
 	const args = parseArgv(process.argv.slice(2), {
 		string: ["config"],
+		boolean: ["watch"],
 	}) as Args;
 
 	const configFilename = resolve(args.config ?? "u27n.json");
@@ -46,7 +48,54 @@ interface Args extends parseArgv.Arguments {
 
 	const project = new Project(pluginContext);
 
-	{
+	if (args.watch) {
+		watchFiles({
+			cwd: config.context,
+			patterns: [
+				config.translationData,
+				...config.include,
+			],
+
+			async onChange(changes) {
+				const updatedSources = new Map<string, Source>();
+				const removedSources = new Set<string>();
+				let translationData: TranslationData | undefined = undefined;
+
+				for (const filename of changes.updated) {
+					if (filename === config.translationData) {
+						translationData = await TranslationData.read(config.translationData);
+					} else {
+						const source = await createSource(filename);
+						if (source === undefined) {
+							// TODO: Emit diagnostic for unsupported source.
+						} else {
+							updatedSources.set(Source.filenameToSourceId(config.context, filename), source);
+						}
+					}
+				}
+
+				for (const filename of changes.removed) {
+					if (filename !== config.translationData) {
+						removedSources.add(Source.filenameToSourceId(config.context, filename));
+					}
+				}
+
+				const _result = project.applyUpdate({
+					updatedSources,
+					removedSources,
+					translationData,
+				});
+
+				// TODO: Write changes files to disk-
+
+				// TODO: Write output.
+			},
+		});
+
+		setTimeout(() => {
+			process.exit(0);
+		}, 3000);
+	} else {
 		const translationData = await TranslationData.read(config.translationData);
 
 		const sources = new Map<string, Source>();
@@ -73,15 +122,6 @@ interface Args extends parseArgv.Arguments {
 
 		// TODO: Write output.
 	}
-
-	// TODO: Development workflow:
-	// - Find and watch translation data.
-	// - Find and watch sources.
-	// - Apply initial project update.
-	// - Write output.
-	// - When changes are detected:
-	//   - Apply update.
-	//   - Write output.
 })().catch(error => {
 	console.error(error);
 	process.exit(1);
