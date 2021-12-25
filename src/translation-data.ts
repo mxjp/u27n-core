@@ -1,4 +1,4 @@
-import { readFile } from "fs/promises";
+import { readFile, writeFile } from "fs/promises";
 
 /**
  * Json format that contains translation data for a project.
@@ -72,5 +72,12 @@ export namespace TranslationData {
 				throw error;
 			}
 		}
+	}
+
+	/**
+	 * Write a translation data file.
+	 */
+	export async function write(filename: string, data: TranslationData): Promise<void> {
+		await writeFile(filename, JSON.stringify(data, null, "\t") + "\n");
 	}
 }

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { readFile } from "fs/promises";
+import { readFile, writeFile } from "fs/promises";
 import { resolve } from "path";
 import parseArgv from "yargs-parser";
 
@@ -20,6 +20,7 @@ interface Args extends parseArgv.Arguments {
 		string: ["config"],
 		boolean: ["watch"],
 	}) as Args;
+	const watch = args.watch ?? false;
 
 	const configFilename = resolve(args.config ?? "u27n.json");
 	const config = await Config.read(configFilename);
@@ -48,7 +49,7 @@ interface Args extends parseArgv.Arguments {
 
 	const project = new Project(pluginContext);
 
-	if (args.watch) {
+	if (watch) {
 		watchFiles({
 			cwd: config.context,
 			patterns: [
@@ -80,21 +81,24 @@ interface Args extends parseArgv.Arguments {
 					}
 				}
 
-				const _result = project.applyUpdate({
+				const result = project.applyUpdate({
 					updatedSources,
 					removedSources,
 					translationData,
 				});
 
-				// TODO: Write changes files to disk-
+				if (project.translationDataModified) {
+					project.translationDataModified = false;
+					await TranslationData.write(config.translationData, project.translationData);
+				}
+
+				for (const [sourceId, content] of result.modifiedSources) {
+					await writeFile(Source.sourceIdToFilename(config.context, sourceId), content);
+				}
 
 				// TODO: Write output.
 			},
 		});
-
-		setTimeout(() => {
-			process.exit(0);
-		}, 3000);
 	} else {
 		const translationData = await TranslationData.read(config.translationData);
 
