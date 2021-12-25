@@ -2,7 +2,7 @@ import type { Config } from "./config.js";
 import { DataProcessor } from "./data-processor.js";
 import type { Source } from "./source.js";
 
-export interface SetupPluginContext extends DataProcessor.Options {
+export interface PluginSetupContext extends DataProcessor.Options {
 	/** The global configuration. */
 	readonly config: Config;
 }
@@ -21,7 +21,7 @@ export interface Plugin {
 	 * @param context The plugin context.
 	 * @param config The plugin configuration.
 	 */
-	setup?(context: SetupPluginContext, config: unknown): void | Promise<void>;
+	setup?(context: PluginSetupContext, config: unknown): void | Promise<void>;
 
 	/**
 	 * Called to try to create s source for the specified file.

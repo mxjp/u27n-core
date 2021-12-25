@@ -1,4 +1,3 @@
-import { readFile, writeFile } from "fs/promises";
 
 /**
  * Json format that contains translation data for a project.
@@ -59,25 +58,11 @@ export namespace TranslationData {
 	 */
 	export type ObsoleteItem = [string, Fragment];
 
-	/**
-	 * Read a translation data file.
-	 *
-	 * @returns The translation data object or undefined if the file does not exist.
-	 */
-	export async function read(filename: string): Promise<TranslationData | undefined> {
-		try {
-			return JSON.parse(await readFile(filename, "utf-8")) as TranslationData;
-		} catch (error) {
-			if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-				throw error;
-			}
-		}
+	export function parseJson(json: string): TranslationData {
+		return JSON.parse(json) as TranslationData;
 	}
 
-	/**
-	 * Write a translation data file.
-	 */
-	export async function write(filename: string, data: TranslationData): Promise<void> {
-		await writeFile(filename, JSON.stringify(data, null, "\t") + "\n");
+	export function formatJson(data: TranslationData): string {
+		return JSON.stringify(data, null, "\t") + "\n";
 	}
 }
