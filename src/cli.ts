@@ -13,14 +13,18 @@ import { findFiles, watchFiles } from "./utility/file-system.js";
 interface Args extends parseArgv.Arguments {
 	config?: string;
 	watch?: boolean;
+	output?: boolean;
+	modify?: boolean;
 }
 
 (async () => {
 	const args = parseArgv(process.argv.slice(2), {
 		string: ["config"],
-		boolean: ["watch"],
+		boolean: ["watch", "output", "modify"],
 	}) as Args;
 	const watch = args.watch ?? false;
+	const output = args.output ?? true;
+	const modify = args.modify ?? watch;
 
 	const configFilename = resolve(args.config ?? "u27n.json");
 	const config = await Config.read(configFilename);
@@ -87,16 +91,20 @@ interface Args extends parseArgv.Arguments {
 					translationData,
 				});
 
-				if (project.translationDataModified) {
-					project.translationDataModified = false;
-					await TranslationData.write(config.translationData, project.translationData);
+				if (modify) {
+					if (project.translationDataModified) {
+						project.translationDataModified = false;
+						await TranslationData.write(config.translationData, project.translationData);
+					}
+
+					for (const [sourceId, content] of result.modifiedSources) {
+						await writeFile(Source.sourceIdToFilename(config.context, sourceId), content);
+					}
 				}
 
-				for (const [sourceId, content] of result.modifiedSources) {
-					await writeFile(Source.sourceIdToFilename(config.context, sourceId), content);
+				if (output) {
+					// TODO: Write output.
 				}
-
-				// TODO: Write output.
 			},
 		});
 	} else {
@@ -112,19 +120,32 @@ interface Args extends parseArgv.Arguments {
 			}
 		}
 
-		const updateResult = project.applyUpdate({
+		const result = project.applyUpdate({
 			translationData,
 			updatedSources: sources,
 		});
 
-		if (project.translationDataModified) {
-			// TODO: Emit diagnostic for out of sync translation data.
-		}
-		if (updateResult.modifiedSources.size > 0) {
-			// TODO: Emit diagnostic for out of sync sources.
+		if (modify) {
+			if (project.translationDataModified) {
+				project.translationDataModified = false;
+				await TranslationData.write(config.translationData, project.translationData);
+			}
+
+			for (const [sourceId, content] of result.modifiedSources) {
+				await writeFile(Source.sourceIdToFilename(config.context, sourceId), content);
+			}
+		} else {
+			if (project.translationDataModified) {
+				// TODO: Emit diagnostic for out of sync translation data.
+			}
+			if (result.modifiedSources.size > 0) {
+				// TODO: Emit diagnostic for out of sync sources.
+			}
 		}
 
-		// TODO: Write output.
+		if (output) {
+			// TODO: Write output.
+		}
 	}
 })().catch(error => {
 	console.error(error);
