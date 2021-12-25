@@ -1,30 +1,37 @@
 import { Source } from "../source.js";
 
 export class SourceFragmentMap {
-	private readonly _sourceToFragments = new Map<string, Set<string>>();
-	private readonly _fragmentToSources = new Map<string, Set<string>>();
+	readonly #sourceToFragments = new Map<string, Set<string>>();
+	readonly #fragmentToSources = new Map<string, Set<string>>();
+
+	/**
+	 * Get a view on the current mapping from source ids to sets of fragment ids.
+	 */
+	public get sourceToFragments(): ReadonlyMap<string, ReadonlySet<string>> {
+		return this.#sourceToFragments;
+	}
 
 	/**
 	 * Get a view on the current mapping from fragment ids to sets of source ids.
 	 */
 	public get fragmentToSources(): ReadonlyMap<string, ReadonlySet<string>> {
-		return this._fragmentToSources;
+		return this.#fragmentToSources;
 	}
 
 	/**
 	 * Update all fragments of the specified source.
 	 */
 	public updateSource(sourceId: string, fragmentMap: Map<string, Source.Fragment>): void {
-		let fragmentIds = this._sourceToFragments.get(sourceId);
+		let fragmentIds = this.#sourceToFragments.get(sourceId);
 		if (fragmentIds === undefined) {
 			if (fragmentMap.size > 0) {
 				fragmentIds = new Set();
-				this._sourceToFragments.set(sourceId, fragmentIds);
+				this.#sourceToFragments.set(sourceId, fragmentIds);
 			}
 		} else {
 			fragmentIds.forEach(fragmentId => {
 				if (!fragmentMap.has(fragmentId)) {
-					deletePair(this._fragmentToSources, fragmentId, sourceId);
+					deletePair(this.#fragmentToSources, fragmentId, sourceId);
 					fragmentIds!.delete(fragmentId);
 				}
 			});
@@ -34,15 +41,15 @@ export class SourceFragmentMap {
 			fragmentMap.forEach((_fragment, fragmentId) => {
 				fragmentIds!.add(fragmentId);
 
-				const sourceIds = this._fragmentToSources.get(fragmentId);
+				const sourceIds = this.#fragmentToSources.get(fragmentId);
 				if (sourceIds === undefined) {
-					this._fragmentToSources.set(fragmentId, new Set([sourceId]));
+					this.#fragmentToSources.set(fragmentId, new Set([sourceId]));
 				} else {
 					sourceIds.add(sourceId);
 				}
 			});
 		} else if (fragmentIds !== undefined) {
-			this._sourceToFragments.delete(sourceId);
+			this.#sourceToFragments.delete(sourceId);
 		}
 	}
 
@@ -50,17 +57,17 @@ export class SourceFragmentMap {
 	 * Remove all fragments of the specified source.
 	 */
 	public removeSource(sourceId: string): void {
-		this._sourceToFragments.get(sourceId)?.forEach(fragmentId => {
-			deletePair(this._fragmentToSources, fragmentId, sourceId);
+		this.#sourceToFragments.get(sourceId)?.forEach(fragmentId => {
+			deletePair(this.#fragmentToSources, fragmentId, sourceId);
 		});
-		this._sourceToFragments.delete(sourceId);
+		this.#sourceToFragments.delete(sourceId);
 	}
 
 	/**
 	 * Check if there are any sources other than the specified one that also provide the same fragment.
 	 */
 	public hasOtherSources(sourceId: string, fragmentId: string): boolean {
-		const sourceIds = this._fragmentToSources.get(fragmentId);
+		const sourceIds = this.#fragmentToSources.get(fragmentId);
 		return sourceIds !== undefined
 			&& sourceIds.size > (sourceIds.has(sourceId) ? 1 : 0);
 	}
@@ -69,7 +76,7 @@ export class SourceFragmentMap {
 	 * Check if there are any fragments with the specified id.
 	 */
 	public hasFragment(fragmentId: string): boolean {
-		return this._fragmentToSources.has(fragmentId);
+		return this.#fragmentToSources.has(fragmentId);
 	}
 }
 

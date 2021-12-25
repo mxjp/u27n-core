@@ -8,9 +8,9 @@ export class Source {
 	public readonly content: string;
 	public readonly fragmentIdGenerator?: FragmentIdGenerator;
 
-	private _lineMap: LineMap | undefined = undefined;
-	private _fragments: Source.Fragment[] | undefined = undefined;
-	private _fragmentMap: Map<string, Source.Fragment> | undefined = undefined;
+	#lineMap: LineMap | undefined = undefined;
+	#fragments: Source.Fragment[] | undefined = undefined;
+	#fragmentMap: Map<string, Source.Fragment> | undefined = undefined;
 
 	public constructor(content: string) {
 		this.content = content;
@@ -33,20 +33,20 @@ export class Source {
 	 * for converting between line/character positions and offsets.
 	 */
 	public get lineMap(): LineMap {
-		if (this._lineMap === undefined) {
-			this._lineMap = new LineMap(this.content);
+		if (this.#lineMap === undefined) {
+			this.#lineMap = new LineMap(this.content);
 		}
-		return this._lineMap;
+		return this.#lineMap;
 	}
 
 	/**
 	 * An array of all fragments in this source.
 	 */
 	public get fragments(): Source.Fragment[] {
-		if (this._fragments === undefined) {
-			this._fragments = this.parse ? this.parse() : [];
+		if (this.#fragments === undefined) {
+			this.#fragments = this.parse ? this.parse() : [];
 		}
-		return this._fragments;
+		return this.#fragments;
 	}
 
 	/**
@@ -55,7 +55,7 @@ export class Source {
 	 * Note that this may not contain all fragments if there are any duplicate fragment ids.
 	 */
 	public get fragmentMap(): Map<string, Source.Fragment> {
-		if (this._fragmentMap === undefined) {
+		if (this.#fragmentMap === undefined) {
 			const map = new Map<string, Source.Fragment>();
 			const fragments = this.fragments;
 			for (let i = 0; i < fragments.length; i++) {
@@ -64,9 +64,9 @@ export class Source {
 					map.set(fragment.fragmentId, fragment);
 				}
 			}
-			this._fragmentMap = map;
+			this.#fragmentMap = map;
 		}
-		return this._fragmentMap;
+		return this.#fragmentMap;
 	}
 
 	/**

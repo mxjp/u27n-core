@@ -15,9 +15,9 @@ export interface FragmentIdGenerator {
  * A fragment id generator that yields incrementing base 62 encoded numeric ids.
  */
 export class Base62FragmentIdGenerator implements FragmentIdGenerator {
-	private _next = 0;
+	#next = 0;
 
 	public generate(): string {
-		return base62encode(this._next++);
+		return base62encode(this.#next++);
 	}
 }

@@ -70,7 +70,7 @@ test("hasFragment", t => {
 
 function verifyMap(t: ExecutionContext, map: SourceFragmentMap): void {
 	const fragmentToSources = new Map<string, Set<string>>();
-	map["_sourceToFragments"].forEach((fragments, source) => {
+	map.sourceToFragments.forEach((fragments, source) => {
 		fragments.forEach(fragment => {
 			const sources = fragmentToSources.get(fragment);
 			if (sources === undefined) {
@@ -81,9 +81,9 @@ function verifyMap(t: ExecutionContext, map: SourceFragmentMap): void {
 		});
 	});
 
-	t.is(map["_fragmentToSources"].size, fragmentToSources.size);
+	t.is(map.fragmentToSources.size, fragmentToSources.size);
 	fragmentToSources.forEach((sources, fragment) => {
-		const sourcesFromMap = map["_fragmentToSources"].get(fragment);
+		const sourcesFromMap = map.fragmentToSources.get(fragment);
 		t.is(sourcesFromMap?.size, sources.size);
 		t.deepEqual(sources, sourcesFromMap);
 	});

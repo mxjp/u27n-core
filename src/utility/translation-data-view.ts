@@ -13,7 +13,7 @@ export class TranslationDataView {
 	public modified = false;
 
 	/** A map of source ids to sets of fragment ids. */
-	private readonly _sources = new Map<string, Set<string>>();
+	readonly #sources = new Map<string, Set<string>>();
 
 	public constructor(data?: TranslationData) {
 		if (data === undefined) {
@@ -28,7 +28,7 @@ export class TranslationDataView {
 			}
 			this.data = data;
 			for (const fragmentId in data.fragments) {
-				this._addSourceFragmentPair(data.fragments[fragmentId].sourceId, fragmentId);
+				this.#addSourceFragmentPair(data.fragments[fragmentId].sourceId, fragmentId);
 			}
 		}
 	}
@@ -44,9 +44,9 @@ export class TranslationDataView {
 	public updateFragment(sourceId: string, fragmentId: string, update: Source.FragmentUpdate): void {
 		const existingFragment = this.data.fragments[fragmentId];
 		if (existingFragment) {
-			if (!TranslationDataView.jsonEquals(existingFragment.value, update.value)) {
+			if (!TranslationDataView.#jsonEquals(existingFragment.value, update.value)) {
 				existingFragment.value = update.value ?? null;
-				existingFragment.modified = TranslationDataView.createTimestamp();
+				existingFragment.modified = TranslationDataView.#createTimestamp();
 				this.modified = true;
 			}
 			if (existingFragment.enabled !== update.enabled) {
@@ -54,9 +54,9 @@ export class TranslationDataView {
 				this.modified = true;
 			}
 			if (existingFragment.sourceId !== sourceId) {
-				this._removeSourceFragmentPair(existingFragment.sourceId, fragmentId);
+				this.#removeSourceFragmentPair(existingFragment.sourceId, fragmentId);
 				existingFragment.sourceId = sourceId;
-				this._addSourceFragmentPair(sourceId, fragmentId);
+				this.#addSourceFragmentPair(sourceId, fragmentId);
 				this.modified = true;
 			}
 		} else {
@@ -68,10 +68,10 @@ export class TranslationDataView {
 				sourceId,
 				enabled: update.enabled,
 				value: update.value ?? null,
-				modified: TranslationDataView.createTimestamp(),
-				translations: oldTranslations === undefined ? {} : TranslationDataView.cloneJson(oldTranslations),
+				modified: TranslationDataView.#createTimestamp(),
+				translations: oldTranslations === undefined ? {} : TranslationDataView.#cloneJson(oldTranslations),
 			};
-			this._addSourceFragmentPair(sourceId, fragmentId);
+			this.#addSourceFragmentPair(sourceId, fragmentId);
 			this.modified = true;
 		}
 	}
@@ -80,10 +80,10 @@ export class TranslationDataView {
 	 * Remove fragments of a specific source that match a filter.
 	 */
 	public removeFragmentsOfSource(sourceId: string, filter?: TranslationDataView.FragmentFilter): void {
-		this._sources.get(sourceId)?.forEach(fragmentId => {
+		this.#sources.get(sourceId)?.forEach(fragmentId => {
 			const fragment = this.data.fragments[fragmentId];
 			if (!filter || filter(fragmentId, fragment)) {
-				this._removeFragment(fragmentId, fragment);
+				this.#removeFragment(fragmentId, fragment);
 			}
 		});
 	}
@@ -95,7 +95,7 @@ export class TranslationDataView {
 		for (const fragmentId in this.data.fragments) {
 			const fragment = this.data.fragments[fragmentId];
 			if (filter(fragmentId, fragment)) {
-				this._removeFragment(fragmentId, fragment);
+				this.#removeFragment(fragmentId, fragment);
 			}
 		}
 	}
@@ -104,10 +104,10 @@ export class TranslationDataView {
 	 * Remove all fragments of all sources that match the filter.
 	 */
 	public removeSources(filter: TranslationDataView.SourceFilter): void {
-		this._sources.forEach((fragmentIds, sourceId) => {
+		this.#sources.forEach((fragmentIds, sourceId) => {
 			if (filter(sourceId)) {
 				fragmentIds.forEach(fragmentId => {
-					this._removeFragment(fragmentId, this.data.fragments[fragmentId]);
+					this.#removeFragment(fragmentId, this.data.fragments[fragmentId]);
 				});
 			}
 		});
@@ -127,7 +127,7 @@ export class TranslationDataView {
 			const data = this.data.fragments[fragment.fragmentId];
 			return data !== undefined
 				&& data.sourceId === sourceId
-				&& TranslationDataView.jsonEquals(fragment.value, data.value)
+				&& TranslationDataView.#jsonEquals(fragment.value, data.value)
 				&& fragment.enabled === data.enabled;
 		}
 		return false;
@@ -136,8 +136,8 @@ export class TranslationDataView {
 	/**
 	 * Internal function to remove a fragment.
 	 */
-	private _removeFragment(fragmentId: string, fragment: TranslationData.Fragment): void {
-		this._removeSourceFragmentPair(fragment.sourceId, fragmentId);
+	#removeFragment(fragmentId: string, fragment: TranslationData.Fragment): void {
+		this.#removeSourceFragmentPair(fragment.sourceId, fragmentId);
 		delete this.data.fragments[fragmentId];
 		if (Object.keys(fragment.translations).length > 0) {
 			this.data.obsolete.push([fragmentId, fragment]);
@@ -148,43 +148,43 @@ export class TranslationDataView {
 	/**
 	 * Internal function that must be called when a new sourceId/fragmentId pair has been added.
 	 */
-	private _addSourceFragmentPair(sourceId: string, fragmentId: string): void {
-		const fragmentIds = this._sources.get(sourceId);
+	#addSourceFragmentPair(sourceId: string, fragmentId: string): void {
+		const fragmentIds = this.#sources.get(sourceId);
 		if (fragmentIds) {
 			fragmentIds.add(fragmentId);
 		} else {
-			this._sources.set(sourceId, new Set([fragmentId]));
+			this.#sources.set(sourceId, new Set([fragmentId]));
 		}
 	}
 
 	/**
 	 * Internal function that must be called when a new sourceId/fragmentId pair has been removed.
 	 */
-	private _removeSourceFragmentPair(sourceId: string, fragmentId: string): void {
-		const fragmentIds = this._sources.get(sourceId);
+	#removeSourceFragmentPair(sourceId: string, fragmentId: string): void {
+		const fragmentIds = this.#sources.get(sourceId);
 		if (fragmentIds?.delete(fragmentId) && fragmentIds.size === 0) {
-			this._sources.delete(sourceId);
+			this.#sources.delete(sourceId);
 		}
 	}
 
 	/**
 	 * Utility for checking if two json serializable values are deeply equal.
 	 */
-	private static jsonEquals<T>(a: T, b: T): boolean {
+	static #jsonEquals<T>(a: T, b: T): boolean {
 		return JSON.stringify(a) === JSON.stringify(b);
 	}
 
 	/**
 	 * Utility for cloning a json serializable value.
 	 */
-	private static cloneJson<T>(value: T): T {
+	static #cloneJson<T>(value: T): T {
 		return JSON.parse(JSON.stringify(value)) as T;
 	}
 
 	/**
 	 * Get a timestamp that can be used in the data object json format.
 	 */
-	private static createTimestamp(date: Date = new Date()): string {
+	static #createTimestamp(date: Date = new Date()): string {
 		return date.toISOString();
 	}
 }

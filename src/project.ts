@@ -9,45 +9,45 @@ export class Project {
 	 * The default fragment id generator that is used if
 	 * the source does not provide it's own generator.
 	 */
-	private readonly _fragmentIdGenerator: FragmentIdGenerator;
+	readonly #fragmentIdGenerator: FragmentIdGenerator;
 
 	/**
 	 * The current translation data view that is used.
 	 *
 	 * This is only modified while updates are processed.
 	 */
-	private _translationDataView = new TranslationDataView();
+	#translationDataView = new TranslationDataView();
 
 	/**
 	 * Map of current source ids to source instances.
 	 */
-	private readonly _sources = new Map<string, Source>();
+	readonly #sources = new Map<string, Source>();
 
 	/**
 	 * Map of source ids to fragment ids.
 	 */
-	private readonly _sourceFragments = new SourceFragmentMap();
+	readonly #sourceFragments = new SourceFragmentMap();
 
 	public constructor(options: Project.Options = {}) {
-		this._fragmentIdGenerator = options.fragmentIdGenerator ?? new Base62FragmentIdGenerator();
+		this.#fragmentIdGenerator = options.fragmentIdGenerator ?? new Base62FragmentIdGenerator();
 	}
 
 	/**
 	 * Get the current translation data that is managed by this project.
 	 */
 	public get translationData(): TranslationData {
-		return this._translationDataView.data;
+		return this.#translationDataView.data;
 	}
 
 	/**
 	 * Get or set if the translation data that is managed by this project has been modified by applying an update.
 	 */
 	public get translationDataModified(): boolean {
-		return this._translationDataView.modified;
+		return this.#translationDataView.modified;
 	}
 
 	public set translationDataModified(value: boolean) {
-		this._translationDataView.modified = value;
+		this.#translationDataView.modified = value;
 	}
 
 	/**
@@ -57,22 +57,22 @@ export class Project {
 		const modifiedSources = new Map<string, string>();
 
 		if (update.translationData) {
-			this._translationDataView = new TranslationDataView(update.translationData);
+			this.#translationDataView = new TranslationDataView(update.translationData);
 			// TODO: Only update the view if translation data has changed.
 			// TODO: Process all current sources as updated.
 		}
 
 		update.updatedSources?.forEach((source, sourceId) => {
-			this._sourceFragments.updateSource(sourceId, source.fragmentMap);
+			this.#sourceFragments.updateSource(sourceId, source.fragmentMap);
 		});
 		update.removedSources?.forEach(sourceId => {
-			this._sourceFragments.removeSource(sourceId);
+			this.#sourceFragments.removeSource(sourceId);
 		});
 
 		const assignedFragmentIds = new Set<string>();
 
 		update.updatedSources?.forEach((source, sourceId) => {
-			this._sources.set(sourceId, source);
+			this.#sources.set(sourceId, source);
 
 			if (source.update) {
 				const updateResult = source.update({
@@ -81,20 +81,20 @@ export class Project {
 							fragment.fragmentId !== undefined
 							&& !assignedFragmentIds.has(fragment.fragmentId)
 							&& (
-								!this._sourceFragments.hasOtherSources(sourceId, fragment.fragmentId)
-								|| this._translationDataView.isInSync(sourceId, fragment)
+								!this.#sourceFragments.hasOtherSources(sourceId, fragment.fragmentId)
+								|| this.#translationDataView.isInSync(sourceId, fragment)
 							)
 						) {
 							assignedFragmentIds.add(fragment.fragmentId);
 							return fragment.fragmentId;
 						}
 
-						const generator = source.fragmentIdGenerator ?? this._fragmentIdGenerator;
+						const generator = source.fragmentIdGenerator ?? this.#fragmentIdGenerator;
 
 						let id: string;
 						do {
-							id = generator.generate(this._sourceFragments.fragmentToSources);
-						} while (assignedFragmentIds.has(id) || this._sourceFragments.hasFragment(id));
+							id = generator.generate(this.#sourceFragments.fragmentToSources);
+						} while (assignedFragmentIds.has(id) || this.#sourceFragments.hasFragment(id));
 						assignedFragmentIds.add(id);
 						return id;
 					},
@@ -105,37 +105,37 @@ export class Project {
 				}
 
 				updateResult.fragments.forEach((update, fragmentId) => {
-					this._translationDataView.updateFragment(sourceId, fragmentId, update);
+					this.#translationDataView.updateFragment(sourceId, fragmentId, update);
 				});
-				this._translationDataView.removeFragmentsOfSource(sourceId, fragmentId => {
+				this.#translationDataView.removeFragmentsOfSource(sourceId, fragmentId => {
 					return !updateResult.fragments.has(fragmentId);
 				});
 			} else {
 				const staticFragments = source.fragmentMap;
 				staticFragments.forEach((fragment, fragmentId) => {
-					if (assignedFragmentIds.has(fragmentId) || this._sourceFragments.hasOtherSources(sourceId, fragmentId)) {
+					if (assignedFragmentIds.has(fragmentId) || this.#sourceFragments.hasOtherSources(sourceId, fragmentId)) {
 						// TODO: Emit diagnostic for duplicate static fragment id.
 					} else if (fragment.value !== undefined) {
 						assignedFragmentIds.add(fragmentId);
-						this._translationDataView.updateFragment(sourceId, fragmentId, {
+						this.#translationDataView.updateFragment(sourceId, fragmentId, {
 							enabled: fragment.enabled,
 							value: fragment.value,
 							oldFragmentId: undefined,
 						});
 					}
 				});
-				this._translationDataView.removeFragmentsOfSource(sourceId, fragmentId => {
+				this.#translationDataView.removeFragmentsOfSource(sourceId, fragmentId => {
 					return !staticFragments.has(fragmentId);
 				});
 			}
 		});
 
 		update.removedSources?.forEach(sourceId => {
-			this._sources.delete(sourceId);
+			this.#sources.delete(sourceId);
 		});
 
-		this._translationDataView.removeSources(sourceId => {
-			return !this._sources.has(sourceId);
+		this.#translationDataView.removeSources(sourceId => {
+			return !this.#sources.has(sourceId);
 		});
 
 		return { modifiedSources };
