@@ -38,7 +38,7 @@ export class Project {
 			],
 			onError: options.onError,
 			onChange: async changes => {
-				const diagnostics: Diagnostic[] = [];
+				let diagnostics: Diagnostic[] = [];
 				const updatedSources = new Map<string, Source>();
 				const removedSources = new Set<string>();
 				let translationData: TranslationData | undefined = undefined;
@@ -85,6 +85,12 @@ export class Project {
 					}
 				}
 
+				if (options.fragmentDiagnostics) {
+					diagnostics = diagnostics.concat(this.dataProcessor.getFragmentDiagnostics({
+						translatedLocales: this.config.locales.slice(1),
+					}));
+				}
+
 				if (options.output) {
 					// TODO: Write output.
 				}
@@ -95,7 +101,7 @@ export class Project {
 	}
 
 	public async run(options: Project.RunOptions): Promise<Project.RunResult> {
-		const diagnostics: Diagnostic[] = [];
+		let diagnostics: Diagnostic[] = [];
 		const translationDataJson = await this.fileSystem.readOptionalFile(this.config.translationData);
 		const translationData = translationDataJson === undefined ? undefined : TranslationData.parseJson(translationDataJson);
 
@@ -133,6 +139,12 @@ export class Project {
 			diagnostics.push({
 				type: "projectOutOfSync",
 			});
+		}
+
+		if (options.fragmentDiagnostics) {
+			diagnostics = diagnostics.concat(this.dataProcessor.getFragmentDiagnostics({
+				translatedLocales: this.config.locales.slice(1),
+			}));
 		}
 
 		if (options.output) {
@@ -180,6 +192,7 @@ export declare namespace Project {
 	export interface WatchOptions {
 		output: boolean;
 		modify: boolean;
+		fragmentDiagnostics: boolean;
 		onDiagnostics?: (diagnostics: Diagnostic[]) => void;
 		onError?: (error: unknown) => void;
 	}
@@ -187,6 +200,7 @@ export declare namespace Project {
 	export interface RunOptions {
 		output: boolean;
 		modify: boolean;
+		fragmentDiagnostics: boolean;
 	}
 
 	export interface RunResult {

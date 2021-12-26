@@ -425,3 +425,148 @@ test(`${DataProcessor.prototype.applyUpdate.name} (data update, removed source)`
 		verifyFragments(t, processor.translationData, {});
 	}
 });
+
+test(`${DataProcessor.prototype.getFragmentDiagnostics.name} (empty)`, t => {
+	const processor = new DataProcessor();
+	t.deepEqual(processor.getFragmentDiagnostics({
+		translatedLocales: ["de", "ch"],
+	}), []);
+});
+
+test(`${DataProcessor.prototype.getFragmentDiagnostics.name} (missing translations)`, t => {
+	const processor = new DataProcessor();
+	const modified = new Date().toISOString();
+	processor.applyUpdate({
+		translationData: translationData({
+			fragments: {
+				0: fragment({
+					value: "foo",
+					modified: modified,
+				}),
+				1: fragment({
+					value: "bar",
+					modified: modified,
+					translations: {
+						de: { value: "test", modified },
+					},
+				}),
+				2: fragment({
+					value: "baz",
+					modified: modified,
+					translations: {
+						de: { value: "test", modified },
+						ch: { value: "test", modified },
+					},
+				}),
+			},
+		}),
+		updatedSources: new Map([
+			["test", new ManagedTestSource(`
+				foo 0
+				bar 1
+				baz 2
+			`)],
+		]),
+	});
+	t.deepEqual(processor.getFragmentDiagnostics({
+		translatedLocales: ["de", "ch"],
+	}), [
+		{
+			type: "missingTranslations",
+			sourceId: "test",
+			fragmentId: "0",
+			locales: ["de", "ch"],
+		},
+		{
+			type: "missingTranslations",
+			sourceId: "test",
+			fragmentId: "1",
+			locales: ["ch"],
+		},
+	]);
+});
+
+test(`${DataProcessor.prototype.getFragmentDiagnostics.name} (unknown translations)`, t => {
+	const processor = new DataProcessor();
+	const modified = new Date().toISOString();
+	processor.applyUpdate({
+		translationData: translationData({
+			fragments: {
+				0: fragment({
+					value: "foo",
+					modified,
+					translations: {
+						de: { value: "test", modified },
+						ch: { value: "test", modified },
+					},
+				}),
+				1: fragment({
+					value: "bar",
+					modified,
+					translations: {
+						de: { value: "test", modified },
+					},
+				}),
+			},
+		}),
+		updatedSources: new Map([
+			["test", new ManagedTestSource(`
+				foo 0
+				bar 1
+			`)],
+		]),
+	});
+	t.deepEqual(processor.getFragmentDiagnostics({
+		translatedLocales: ["de"],
+	}), [
+		{
+			type: "unknownTranslations",
+			sourceId: "test",
+			fragmentId: "0",
+			locales: ["ch"],
+		},
+	]);
+});
+
+test(`${DataProcessor.prototype.getFragmentDiagnostics.name} (outdated translations)`, t => {
+	const processor = new DataProcessor();
+	const modified = new Date().toISOString();
+	processor.applyUpdate({
+		translationData: translationData({
+			fragments: {
+				0: fragment({
+					value: "foo",
+					modified,
+					translations: {
+						de: { value: "test", modified },
+						ch: { value: "test", modified: new Date(Date.parse(modified) - 1000).toISOString() },
+					},
+				}),
+				1: fragment({
+					value: "bar",
+					modified,
+					translations: {
+						de: { value: "test", modified },
+						ch: { value: "test", modified },
+					},
+				}),
+			},
+		}),
+		updatedSources: new Map([
+			["test", new ManagedTestSource(`
+				foo 0
+				bar 1
+			`)],
+		]),
+	});
+	t.deepEqual(processor.getFragmentDiagnostics({
+		translatedLocales: ["de", "ch"],
+	}), [
+		{
+			type: "outdatedTranslations",
+			sourceId: "test",
+			fragmentId: "0",
+			locales: ["ch"],
+		},
+	]);
+});

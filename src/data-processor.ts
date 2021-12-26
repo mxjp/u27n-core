@@ -1,3 +1,4 @@
+import { Diagnostic } from "./diagnostics.js";
 import { Base62FragmentIdGenerator, FragmentIdGenerator } from "./fragment-id-generator.js";
 import type { Source } from "./source.js";
 import type { TranslationData } from "./translation-data.js";
@@ -157,6 +158,62 @@ export class DataProcessor {
 
 		return { modifiedSources };
 	}
+
+	public getFragmentDiagnostics(options: DataProcessor.DiagnosticOptions): Diagnostic[] {
+		const diagnostics: Diagnostic[] = [];
+
+		this.#translationDataView.forEachFragment((fragmentId, fragment) => {
+			const sourceModified = Date.parse(fragment.modified);
+
+			const missingLocales = new Set(options.translatedLocales);
+			const unknownLocales: string[] = [];
+			const outdatedLocales: string[] = [];
+			for (const locale in fragment.translations) {
+				if (!missingLocales.delete(locale)) {
+					unknownLocales.push(locale);
+				}
+				if (Date.parse(fragment.translations[locale].modified) < sourceModified) {
+					outdatedLocales.push(locale);
+				}
+			}
+			if (missingLocales.size > 0) {
+				diagnostics.push({
+					type: "missingTranslations",
+					sourceId: fragment.sourceId,
+					fragmentId,
+					locales: Array.from(missingLocales),
+				});
+			}
+			if (unknownLocales.length > 0) {
+				diagnostics.push({
+					type: "unknownTranslations",
+					sourceId: fragment.sourceId,
+					fragmentId,
+					locales: unknownLocales,
+				});
+			}
+			if (outdatedLocales.length > 0) {
+				diagnostics.push({
+					type: "outdatedTranslations",
+					sourceId: fragment.sourceId,
+					fragmentId,
+					locales: outdatedLocales,
+				});
+			}
+		});
+
+		this.#sourceFragments.fragmentToSources.forEach((sourceIds, fragmentId) => {
+			if (sourceIds.size > 1) {
+				diagnostics.push({
+					type: "duplicateFragment",
+					sourceIds: Array.from(sourceIds),
+					fragmentId,
+				});
+			}
+		});
+
+		return diagnostics;
+	}
 }
 
 export declare namespace DataProcessor {
@@ -181,5 +238,9 @@ export declare namespace DataProcessor {
 	export interface UpdateResult {
 		/** Map of source ids to modified content to write to disk */
 		modifiedSources: Map<string, string>;
+	}
+
+	export interface DiagnosticOptions {
+		translatedLocales: string[];
 	}
 }

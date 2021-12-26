@@ -4,7 +4,7 @@ import { relative, resolve } from "path";
 import parseArgv from "yargs-parser";
 
 import { Config } from "./config.js";
-import { Diagnostic, DiagnosticSeverity, getDiagnosticLocation, getDiagnosticMessage, getDiagnosticSeverity } from "./diagnostics.js";
+import { Diagnostic, DiagnosticSeverity, getDiagnosticLocations, getDiagnosticMessage, getDiagnosticSeverity } from "./diagnostics.js";
 import { Project } from "./project.js";
 import { NodeFileSystem } from "./utility/file-system-node.js";
 
@@ -45,25 +45,28 @@ const diagnosticColors = new Map<DiagnosticSeverity, colors.StyleFunction>([
 
 		const severity = getDiagnosticSeverity(config.diagnostics, diagnostic.type);
 		if (severity !== "ignore") {
-			const location = getDiagnosticLocation(config.context, project.dataProcessor, diagnostic);
+			const locations = getDiagnosticLocations(config.context, project.dataProcessor, diagnostic);
 			const message = getDiagnosticMessage(diagnostic);
 			const color = diagnosticColors.get(severity) ?? (value => value);
 
 			let text = `${color(severity)}: ${message}`;
-			switch (location.type) {
-				case "file":
-					text += ` in ${formatFilename(location.filename)}`;
-					break;
 
-				case "fragment":
-					text += ` in ${formatFilename(location.filename)}`;
-					if (location.source) {
-						const position = location.source.lineMap.getPosition(location.start);
-						if (position !== null) {
-							text += `:${position.line + 1}:${position.character + 1}`;
+			for (const location of locations) {
+				switch (location.type) {
+					case "file":
+						text += `\n  in ${formatFilename(location.filename)}`;
+						break;
+
+					case "fragment":
+						text += `\n  in ${formatFilename(location.filename)}`;
+						if (location.source) {
+							const position = location.source.lineMap.getPosition(location.start);
+							if (position !== null) {
+								text += `:${position.line + 1}:${position.character + 1}`;
+							}
 						}
-					}
-					break;
+						break;
+				}
 			}
 
 			console.log(text);
@@ -78,6 +81,7 @@ const diagnosticColors = new Map<DiagnosticSeverity, colors.StyleFunction>([
 		project.watch({
 			output,
 			modify,
+			fragmentDiagnostics: true,
 			onError: console.error,
 			onDiagnostics: diagnostics => {
 				diagnostics.forEach(handleDiagnostic);
@@ -87,6 +91,7 @@ const diagnosticColors = new Map<DiagnosticSeverity, colors.StyleFunction>([
 		const result = await project.run({
 			output,
 			modify,
+			fragmentDiagnostics: true,
 		});
 		result.diagnostics.forEach(handleDiagnostic);
 	}

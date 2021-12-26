@@ -8,7 +8,7 @@ import { createFsLayout } from "./_utility/temp-dir.js";
 
 const cliBin = join(__dirname, "../src/cli.js");
 
-test("foo", async t => {
+test.skip("foo", async t => {
 	const cwd = await createFsLayout(__filename, t, {
 		"u27n.json": jsonFile<Config.Json>({
 			namespace: "test",

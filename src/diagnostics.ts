@@ -17,6 +17,10 @@ export type Diagnostic = {
 	fragmentId: string;
 	locales: string[];
 } | {
+	type: "duplicateFragment";
+	sourceIds: string[];
+	fragmentId: string;
+} | {
 	type: "unsupportedSource";
 	sourceId: string;
 } | {
@@ -46,13 +50,8 @@ export function getDiagnosticSeverity(config: DiagnosticSeverityConfig, type: Di
 }
 
 export type DiagnosticLocation
-	= GlobalDiagnosticLocation
-	| FileDiagnosticLocation
+	= FileDiagnosticLocation
 	| FragmentDiagnosticLocation;
-
-export interface GlobalDiagnosticLocation {
-	type: "global";
-}
 
 export interface FileDiagnosticLocation {
 	type: "file";
@@ -70,7 +69,7 @@ export interface FragmentDiagnosticLocation {
 	end: number;
 }
 
-export function getDiagnosticLocation(rootDir: string, dataProcessor: DataProcessor, diagnostic: Diagnostic): DiagnosticLocation {
+export function getDiagnosticLocations(rootDir: string, dataProcessor: DataProcessor, diagnostic: Diagnostic): DiagnosticLocation[] {
 	switch (diagnostic.type) {
 		case "missingTranslations":
 		case "outdatedTranslations":
@@ -78,42 +77,70 @@ export function getDiagnosticLocation(rootDir: string, dataProcessor: DataProces
 			const source = dataProcessor.getSource(diagnostic.sourceId);
 			const filename = Source.sourceIdToFilename(rootDir, diagnostic.sourceId);
 			if (source === undefined) {
-				return {
+				return [{
 					type: "file",
 					sourceId: diagnostic.sourceId,
 					filename,
-				};
+				}];
 			}
 			const fragment = source.fragmentMap.get(diagnostic.fragmentId);
 			if (fragment === undefined) {
-				return {
+				return [{
 					type: "file",
 					sourceId: diagnostic.sourceId,
 					filename,
 					source,
-				};
+				}];
 			}
-			return {
+			return [{
 				type: "fragment",
 				sourceId: diagnostic.sourceId,
 				filename,
 				source,
 				start: fragment.start,
 				end: fragment.end,
-			};
+			}];
 		}
 
+		case "duplicateFragment":
+			return diagnostic.sourceIds.map(sourceId => {
+				const source = dataProcessor.getSource(sourceId);
+				const filename = Source.sourceIdToFilename(rootDir, sourceId);
+				if (source === undefined) {
+					return {
+						type: "file",
+						sourceId,
+						filename,
+					};
+				}
+				const fragment = source.fragmentMap.get(diagnostic.fragmentId);
+				if (fragment === undefined) {
+					return {
+						type: "file",
+						sourceId,
+						filename,
+						source,
+					};
+				}
+				return {
+					type: "fragment",
+					sourceId,
+					filename,
+					source,
+					start: fragment.start,
+					end: fragment.end,
+				};
+			});
+
 		case "unsupportedSource":
-			return {
+			return [{
 				type: "file",
 				sourceId: diagnostic.sourceId,
 				filename: Source.sourceIdToFilename(rootDir, diagnostic.sourceId),
-			};
+			}];
 
 		case "projectOutOfSync":
-			return {
-				type: "global",
-			};
+			return [];
 	}
 }
 
@@ -135,6 +162,9 @@ export function getDiagnosticMessage(diagnostic: Diagnostic): string {
 
 		case "unknownTranslations":
 			return `Fragment ${string(diagnostic.fragmentId)} has translations for unknown locale(s) ${list(diagnostic.locales)}.`;
+
+		case "duplicateFragment":
+			return `Duplicate fragment id ${string(diagnostic.fragmentId)}.`;
 
 		case "unsupportedSource":
 			return `Source ${string(diagnostic.sourceId)} could not be parsed.`;

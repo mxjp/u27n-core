@@ -134,6 +134,15 @@ export class TranslationDataView {
 	}
 
 	/**
+	 * Iterate over all fragments.
+	 */
+	public forEachFragment(callback: (fragmentId: string, fragment: TranslationData.Fragment) => void): void {
+		for (const name in this.data.fragments) {
+			callback(name, this.data.fragments[name]);
+		}
+	}
+
+	/**
 	 * Internal function to remove a fragment.
 	 */
 	#removeFragment(fragmentId: string, fragment: TranslationData.Fragment): void {
