@@ -14,9 +14,12 @@ const FRAGMENT_REGEXP = /(\s*)(\S+)(?: (\S+))?(\n|$)/y;
  * baz 7w
  * ```
  */
-export class ManagedTestSource extends Source {
-	public constructor(content: string) {
+export class TestSource extends Source {
+	public constructor(content: string, managed = true) {
 		super(unindent(content).trim());
+		if (!managed) {
+			this.update = undefined;
+		}
 	}
 
 	protected parse(): Source.Fragment[] {
@@ -39,7 +42,7 @@ export class ManagedTestSource extends Source {
 		return fragments;
 	}
 
-	public update(context: Source.UpdateContext): Source.UpdateResult {
+	public update?(context: Source.UpdateContext): Source.UpdateResult {
 		let modified = false;
 		const fragments = new Map<string, Source.FragmentUpdate>();
 

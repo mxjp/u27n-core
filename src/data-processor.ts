@@ -104,9 +104,7 @@ export class DataProcessor {
 			} else {
 				const staticFragments = source.fragmentMap;
 				staticFragments.forEach((fragment, fragmentId) => {
-					if (assignedFragmentIds.has(fragmentId) || this.#sourceFragments.hasOtherSources(sourceId, fragmentId)) {
-						// TODO: Emit diagnostic for duplicate static fragment id.
-					} else if (fragment.value !== undefined) {
+					if (fragment.value !== undefined && !assignedFragmentIds.has(fragmentId) && !this.#sourceFragments.hasOtherSources(sourceId, fragmentId)) {
 						assignedFragmentIds.add(fragmentId);
 						this.#translationDataView.updateFragment(sourceId, fragmentId, {
 							enabled: fragment.enabled,

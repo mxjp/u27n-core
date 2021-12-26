@@ -1,13 +1,13 @@
 import { Plugin, PluginSetupContext } from "../../src/index.js";
-import { ManagedTestSource } from "./managed-test-source.js";
+import { TestSource } from "./test-source.js";
 
 export class TestPlugin implements Plugin {
 	public async setup(_setupContext: PluginSetupContext, _config: TestPlugin.Config): Promise<void> {
 	}
 
-	public createSource(filename: string, content: string): ManagedTestSource | undefined {
+	public createSource(filename: string, content: string): TestSource | undefined {
 		if (/\.txt$/.test(filename)) {
-			return new ManagedTestSource(content);
+			return new TestSource(content);
 		}
 	}
 }

@@ -2,7 +2,7 @@ import test, { ExecutionContext } from "ava";
 
 import { DataProcessor } from "../src/data-processor.js";
 import { TranslationData } from "../src/translation-data.js";
-import { ManagedTestSource } from "./_utility/managed-test-source.js";
+import { TestSource } from "./_utility/test-source.js";
 import { unindent } from "./_utility/unindent.js";
 
 function verifyFragments(t: ExecutionContext, data: TranslationData, partialExpected: Record<string, Partial<TranslationData.Fragment>>): void {
@@ -51,11 +51,11 @@ test(`${DataProcessor.prototype.applyUpdate.name} (state in sync)`, t => {
 	const processor = new DataProcessor();
 	const result = processor.applyUpdate({
 		updatedSources: new Map([
-			["a", new ManagedTestSource(`
+			["a", new TestSource(`
 				foo 0
 				bar 1
 			`)],
-			["b", new ManagedTestSource(`
+			["b", new TestSource(`
 				baz 2
 			`)],
 		]),
@@ -75,11 +75,11 @@ test(`${DataProcessor.prototype.applyUpdate.name} (missing id)`, async t => {
 	const processor = new DataProcessor();
 	const result = processor.applyUpdate({
 		updatedSources: new Map([
-			["a", new ManagedTestSource(`
+			["a", new TestSource(`
 				foo 42
 				bar
 			`)],
-			["b", new ManagedTestSource(`
+			["b", new TestSource(`
 				baz 0
 			`)],
 		]),
@@ -110,10 +110,10 @@ test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, multiple source
 	const processor = new DataProcessor();
 	const result = processor.applyUpdate({
 		updatedSources: new Map([
-			["a", new ManagedTestSource(`
+			["a", new TestSource(`
 				foo 0
 			`)],
-			["b", new ManagedTestSource(`
+			["b", new TestSource(`
 				bar 0
 			`)],
 		]),
@@ -139,7 +139,7 @@ test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, single source, 
 	const processor = new DataProcessor();
 	const result = processor.applyUpdate({
 		updatedSources: new Map([
-			["a", new ManagedTestSource(`
+			["a", new TestSource(`
 				foo 0
 				bar 0
 			`)],
@@ -164,10 +164,10 @@ test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, multiple source
 	const processor = new DataProcessor();
 	const result = processor.applyUpdate({
 		updatedSources: new Map([
-			["a", new ManagedTestSource(`
+			["a", new TestSource(`
 				foo 0
 			`)],
-			["b", new ManagedTestSource(`
+			["b", new TestSource(`
 				bar 0
 			`)],
 		]),
@@ -195,7 +195,7 @@ test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, single source, 
 	const processor = new DataProcessor();
 	const result = processor.applyUpdate({
 		updatedSources: new Map([
-			["a", new ManagedTestSource(`
+			["a", new TestSource(`
 				foo 0
 				bar 0
 			`)],
@@ -225,10 +225,10 @@ test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, multiple source
 	const processor = new DataProcessor();
 	const result = processor.applyUpdate({
 		updatedSources: new Map([
-			["a", new ManagedTestSource(`
+			["a", new TestSource(`
 				foo 0
 			`)],
-			["b", new ManagedTestSource(`
+			["b", new TestSource(`
 				bar 0
 			`)],
 		]),
@@ -259,7 +259,7 @@ test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, single source, 
 	const processor = new DataProcessor();
 	const result = processor.applyUpdate({
 		updatedSources: new Map([
-			["a", new ManagedTestSource(`
+			["a", new TestSource(`
 				foo 0
 				bar 0
 			`)],
@@ -290,7 +290,7 @@ test(`${DataProcessor.prototype.applyUpdate.name} (remove source)`, t => {
 
 	processor.applyUpdate({
 		updatedSources: new Map([
-			["a", new ManagedTestSource(`
+			["a", new TestSource(`
 				foo 0
 			`)],
 		]),
@@ -329,7 +329,7 @@ test(`${DataProcessor.prototype.applyUpdate.name} (data update, add source)`, as
 	{
 		const result = processor.applyUpdate({
 			updatedSources: new Map([
-				["a", new ManagedTestSource(`
+				["a", new TestSource(`
 					foo 0
 				`)],
 			]),
@@ -348,7 +348,7 @@ test(`${DataProcessor.prototype.applyUpdate.name} (data update, add source)`, as
 				},
 			}),
 			updatedSources: new Map([
-				["b", new ManagedTestSource(`
+				["b", new TestSource(`
 					bar 1
 				`)],
 			]),
@@ -367,7 +367,7 @@ test(`${DataProcessor.prototype.applyUpdate.name} (data update, update source)`,
 	{
 		const result = processor.applyUpdate({
 			updatedSources: new Map([
-				["a", new ManagedTestSource(`
+				["a", new TestSource(`
 					foo 0
 				`)],
 			]),
@@ -382,7 +382,7 @@ test(`${DataProcessor.prototype.applyUpdate.name} (data update, update source)`,
 				fragments: {},
 			}),
 			updatedSources: new Map([
-				["a", new ManagedTestSource(`
+				["a", new TestSource(`
 					bar 0
 				`)],
 			]),
@@ -400,7 +400,7 @@ test(`${DataProcessor.prototype.applyUpdate.name} (data update, removed source)`
 	{
 		const result = processor.applyUpdate({
 			updatedSources: new Map([
-				["a", new ManagedTestSource(`
+				["a", new TestSource(`
 					foo 0
 				`)],
 			]),
@@ -461,7 +461,7 @@ test(`${DataProcessor.prototype.getFragmentDiagnostics.name} (missing translatio
 			},
 		}),
 		updatedSources: new Map([
-			["test", new ManagedTestSource(`
+			["test", new TestSource(`
 				foo 0
 				bar 1
 				baz 2
@@ -510,7 +510,7 @@ test(`${DataProcessor.prototype.getFragmentDiagnostics.name} (unknown translatio
 			},
 		}),
 		updatedSources: new Map([
-			["test", new ManagedTestSource(`
+			["test", new TestSource(`
 				foo 0
 				bar 1
 			`)],
@@ -553,7 +553,7 @@ test(`${DataProcessor.prototype.getFragmentDiagnostics.name} (outdated translati
 			},
 		}),
 		updatedSources: new Map([
-			["test", new ManagedTestSource(`
+			["test", new TestSource(`
 				foo 0
 				bar 1
 			`)],
@@ -567,6 +567,44 @@ test(`${DataProcessor.prototype.getFragmentDiagnostics.name} (outdated translati
 			sourceId: "test",
 			fragmentId: "0",
 			locales: ["ch"],
+		},
+	]);
+});
+
+test(`${DataProcessor.prototype.getFragmentDiagnostics.name} (duplicate fragment)`, t => {
+	const processor = new DataProcessor();
+	const modified = new Date().toISOString();
+	processor.applyUpdate({
+		translationData: translationData({
+			fragments: {
+				1: fragment({
+					value: "baz",
+					sourceId: "b",
+					modified,
+					translations: {
+						en: { value: "test", modified },
+					},
+				}),
+			},
+		}),
+		updatedSources: new Map([
+			["a", new TestSource(`
+				foo 0
+			`, false)],
+			["b", new TestSource(`
+				bar 0
+				baz 1
+			`, false)],
+		]),
+	});
+	t.false(processor.translationDataModified);
+	t.deepEqual(processor.getFragmentDiagnostics({
+		translatedLocales: ["en"],
+	}), [
+		{
+			type: "duplicateFragment",
+			sourceIds: ["a", "b"],
+			fragmentId: "0",
 		},
 	]);
 });
