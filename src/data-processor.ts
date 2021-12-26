@@ -63,24 +63,7 @@ export class DataProcessor {
 	public applyUpdate(update: DataProcessor.Update): DataProcessor.UpdateResult {
 		const modifiedSources = new Map<string, string>();
 
-		if (update.translationData) {
-			this.#translationDataView = new TranslationDataView(update.translationData);
-			// TODO: Only update the view if translation data has changed.
-			// TODO: Process all current sources as updated.
-		}
-
-		update.updatedSources?.forEach((source, sourceId) => {
-			this.#sourceFragments.updateSource(sourceId, source.fragmentMap);
-		});
-		update.removedSources?.forEach(sourceId => {
-			this.#sourceFragments.removeSource(sourceId);
-		});
-
-		const assignedFragmentIds = new Set<string>();
-
-		update.updatedSources?.forEach((source, sourceId) => {
-			this.#sources.set(sourceId, source);
-
+		function updateSource(this: DataProcessor, source: Source, sourceId: string) {
 			if (source.update) {
 				const updateResult = source.update({
 					updateId: fragment => {
@@ -135,11 +118,38 @@ export class DataProcessor {
 					return !staticFragments.has(fragmentId);
 				});
 			}
+		}
+
+		update.updatedSources?.forEach((source, sourceId) => {
+			this.#sourceFragments.updateSource(sourceId, source.fragmentMap);
+		});
+		update.removedSources?.forEach(sourceId => {
+			this.#sourceFragments.removeSource(sourceId);
 		});
 
-		update.removedSources?.forEach(sourceId => {
-			this.#sources.delete(sourceId);
+		const assignedFragmentIds = new Set<string>();
+		if (update.translationData) {
+			this.#translationDataView = new TranslationDataView(update.translationData);
+		}
+
+		update.updatedSources?.forEach((source, sourceId) => {
+			this.#sources.set(sourceId, source);
+			updateSource.call(this, source, sourceId);
 		});
+
+		if (update.translationData) {
+			this.#sources.forEach((source, sourceId) => {
+				if (update.removedSources?.has(sourceId)) {
+					this.#sources.delete(sourceId);
+				} else if (!update.updatedSources?.has(sourceId)) {
+					updateSource.call(this, source, sourceId);
+				}
+			});
+		} else {
+			update.removedSources?.forEach(sourceId => {
+				this.#sources.delete(sourceId);
+			});
+		}
 
 		this.#translationDataView.removeSources(sourceId => {
 			return !this.#sources.has(sourceId);

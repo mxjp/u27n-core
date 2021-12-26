@@ -48,8 +48,8 @@ test(`${DataProcessor.prototype.applyUpdate.name} (empty update)`, t => {
 });
 
 test(`${DataProcessor.prototype.applyUpdate.name} (state in sync)`, t => {
-	const project = new DataProcessor();
-	const result = project.applyUpdate({
+	const processor = new DataProcessor();
+	const result = processor.applyUpdate({
 		updatedSources: new Map([
 			["a", new ManagedTestSource(`
 				foo 0
@@ -67,13 +67,13 @@ test(`${DataProcessor.prototype.applyUpdate.name} (state in sync)`, t => {
 			},
 		}),
 	});
-	t.false(project.translationDataModified);
+	t.false(processor.translationDataModified);
 	t.is(result.modifiedSources.size, 0);
 });
 
 test(`${DataProcessor.prototype.applyUpdate.name} (missing id)`, async t => {
-	const project = new DataProcessor();
-	const result = project.applyUpdate({
+	const processor = new DataProcessor();
+	const result = processor.applyUpdate({
 		updatedSources: new Map([
 			["a", new ManagedTestSource(`
 				foo 42
@@ -89,14 +89,14 @@ test(`${DataProcessor.prototype.applyUpdate.name} (missing id)`, async t => {
 			},
 		}),
 	});
-	t.true(project.translationDataModified);
-	verifyFragments(t, project.translationData, {
+	t.true(processor.translationDataModified);
+	verifyFragments(t, processor.translationData, {
 		0: { sourceId: "b", value: "baz" },
 		1: { sourceId: "a", value: "bar" },
 		42: { sourceId: "a", value: "foo" },
 	});
-	project.translationDataModified = false;
-	t.false(project.translationDataModified);
+	processor.translationDataModified = false;
+	t.false(processor.translationDataModified);
 
 	t.deepEqual(result.modifiedSources, new Map([
 		["a", source(`
@@ -107,8 +107,8 @@ test(`${DataProcessor.prototype.applyUpdate.name} (missing id)`, async t => {
 });
 
 test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, multiple sources, no data)`, async t => {
-	const project = new DataProcessor();
-	const result = project.applyUpdate({
+	const processor = new DataProcessor();
+	const result = processor.applyUpdate({
 		updatedSources: new Map([
 			["a", new ManagedTestSource(`
 				foo 0
@@ -119,8 +119,8 @@ test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, multiple source
 		]),
 	});
 
-	t.true(project.translationDataModified);
-	verifyFragments(t, project.translationData, {
+	t.true(processor.translationDataModified);
+	verifyFragments(t, processor.translationData, {
 		1: { sourceId: "a", value: "foo" },
 		2: { sourceId: "b", value: "bar" },
 	});
@@ -136,8 +136,8 @@ test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, multiple source
 });
 
 test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, single source, no data)`, async t => {
-	const project = new DataProcessor();
-	const result = project.applyUpdate({
+	const processor = new DataProcessor();
+	const result = processor.applyUpdate({
 		updatedSources: new Map([
 			["a", new ManagedTestSource(`
 				foo 0
@@ -146,8 +146,8 @@ test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, single source, 
 		]),
 	});
 
-	t.true(project.translationDataModified);
-	verifyFragments(t, project.translationData, {
+	t.true(processor.translationDataModified);
+	verifyFragments(t, processor.translationData, {
 		0: { sourceId: "a", value: "foo" },
 		1: { sourceId: "a", value: "bar" },
 	});
@@ -161,8 +161,8 @@ test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, single source, 
 });
 
 test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, multiple sources, data in sync)`, async t => {
-	const project = new DataProcessor();
-	const result = project.applyUpdate({
+	const processor = new DataProcessor();
+	const result = processor.applyUpdate({
 		updatedSources: new Map([
 			["a", new ManagedTestSource(`
 				foo 0
@@ -178,8 +178,8 @@ test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, multiple source
 		}),
 	});
 
-	t.true(project.translationDataModified);
-	verifyFragments(t, project.translationData, {
+	t.true(processor.translationDataModified);
+	verifyFragments(t, processor.translationData, {
 		0: { sourceId: "b", value: "bar" },
 		1: { sourceId: "a", value: "foo" },
 	});
@@ -192,8 +192,8 @@ test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, multiple source
 });
 
 test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, single source, data in sync)`, async t => {
-	const project = new DataProcessor();
-	const result = project.applyUpdate({
+	const processor = new DataProcessor();
+	const result = processor.applyUpdate({
 		updatedSources: new Map([
 			["a", new ManagedTestSource(`
 				foo 0
@@ -207,8 +207,8 @@ test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, single source, 
 		}),
 	});
 
-	t.true(project.translationDataModified);
-	verifyFragments(t, project.translationData, {
+	t.true(processor.translationDataModified);
+	verifyFragments(t, processor.translationData, {
 		0: { sourceId: "a", value: "foo" },
 		1: { sourceId: "a", value: "bar" },
 	});
@@ -222,8 +222,8 @@ test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, single source, 
 });
 
 test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, multiple sources, data out of sync)`, async t => {
-	const project = new DataProcessor();
-	const result = project.applyUpdate({
+	const processor = new DataProcessor();
+	const result = processor.applyUpdate({
 		updatedSources: new Map([
 			["a", new ManagedTestSource(`
 				foo 0
@@ -239,8 +239,8 @@ test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, multiple source
 		}),
 	});
 
-	t.true(project.translationDataModified);
-	verifyFragments(t, project.translationData, {
+	t.true(processor.translationDataModified);
+	verifyFragments(t, processor.translationData, {
 		1: { sourceId: "a", value: "foo" },
 		2: { sourceId: "b", value: "bar" },
 	});
@@ -256,8 +256,8 @@ test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, multiple source
 });
 
 test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, single source, data out of sync)`, async t => {
-	const project = new DataProcessor();
-	const result = project.applyUpdate({
+	const processor = new DataProcessor();
+	const result = processor.applyUpdate({
 		updatedSources: new Map([
 			["a", new ManagedTestSource(`
 				foo 0
@@ -271,8 +271,8 @@ test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, single source, 
 		}),
 	});
 
-	t.true(project.translationDataModified);
-	verifyFragments(t, project.translationData, {
+	t.true(processor.translationDataModified);
+	verifyFragments(t, processor.translationData, {
 		0: { sourceId: "a", value: "foo" },
 		1: { sourceId: "a", value: "bar" },
 	});
@@ -286,33 +286,33 @@ test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, single source, 
 });
 
 test(`${DataProcessor.prototype.applyUpdate.name} (remove source)`, t => {
-	const project = new DataProcessor();
+	const processor = new DataProcessor();
 
-	project.applyUpdate({
+	processor.applyUpdate({
 		updatedSources: new Map([
 			["a", new ManagedTestSource(`
 				foo 0
 			`)],
 		]),
 	});
-	verifyFragments(t, project.translationData, {
+	verifyFragments(t, processor.translationData, {
 		0: { sourceId: "a", value: "foo" },
 	});
-	project.translationDataModified = false;
-	t.false(project.translationDataModified);
+	processor.translationDataModified = false;
+	t.false(processor.translationDataModified);
 
-	const result = project.applyUpdate({
+	const result = processor.applyUpdate({
 		removedSources: new Set(["a"]),
 	});
 	t.is(result.modifiedSources.size, 0);
 
-	t.true(project.translationDataModified);
-	verifyFragments(t, project.translationData, {});
+	t.true(processor.translationDataModified);
+	verifyFragments(t, processor.translationData, {});
 });
 
 test(`${DataProcessor.prototype.applyUpdate.name} (missing source)`, t => {
-	const project = new DataProcessor();
-	const result = project.applyUpdate({
+	const processor = new DataProcessor();
+	const result = processor.applyUpdate({
 		translationData: translationData({
 			fragments: {
 				0: fragment({}),
@@ -320,6 +320,108 @@ test(`${DataProcessor.prototype.applyUpdate.name} (missing source)`, t => {
 		}),
 	});
 	t.is(result.modifiedSources.size, 0);
-	t.true(project.translationDataModified);
-	verifyFragments(t, project.translationData, {});
+	t.true(processor.translationDataModified);
+	verifyFragments(t, processor.translationData, {});
+});
+
+test(`${DataProcessor.prototype.applyUpdate.name} (data update, add source)`, async t => {
+	const processor = new DataProcessor();
+	{
+		const result = processor.applyUpdate({
+			updatedSources: new Map([
+				["a", new ManagedTestSource(`
+					foo 0
+				`)],
+			]),
+		});
+		t.is(result.modifiedSources.size, 0);
+		t.true(processor.translationDataModified);
+		processor.translationDataModified = false;
+	}
+	{
+		const result = processor.applyUpdate({
+			translationData: translationData({
+				fragments: {
+					1: fragment({
+						value: "bar",
+					}),
+				},
+			}),
+			updatedSources: new Map([
+				["b", new ManagedTestSource(`
+					bar 1
+				`)],
+			]),
+		});
+		t.is(result.modifiedSources.size, 0);
+		t.true(processor.translationDataModified);
+		verifyFragments(t, processor.translationData, {
+			0: { sourceId: "a", value: "foo" },
+			1: { sourceId: "b", value: "bar" },
+		});
+	}
+});
+
+test(`${DataProcessor.prototype.applyUpdate.name} (data update, update source)`, async t => {
+	const processor = new DataProcessor();
+	{
+		const result = processor.applyUpdate({
+			updatedSources: new Map([
+				["a", new ManagedTestSource(`
+					foo 0
+				`)],
+			]),
+		});
+		t.is(result.modifiedSources.size, 0);
+		t.true(processor.translationDataModified);
+		processor.translationDataModified = false;
+	}
+	{
+		const result = processor.applyUpdate({
+			translationData: translationData({
+				fragments: {},
+			}),
+			updatedSources: new Map([
+				["a", new ManagedTestSource(`
+					bar 0
+				`)],
+			]),
+		});
+		t.is(result.modifiedSources.size, 0);
+		t.true(processor.translationDataModified);
+		verifyFragments(t, processor.translationData, {
+			0: { sourceId: "a", value: "bar" },
+		});
+	}
+});
+
+test(`${DataProcessor.prototype.applyUpdate.name} (data update, removed source)`, async t => {
+	const processor = new DataProcessor();
+	{
+		const result = processor.applyUpdate({
+			updatedSources: new Map([
+				["a", new ManagedTestSource(`
+					foo 0
+				`)],
+			]),
+		});
+		t.is(result.modifiedSources.size, 0);
+		t.true(processor.translationDataModified);
+		processor.translationDataModified = false;
+	}
+	{
+		const result = processor.applyUpdate({
+			translationData: translationData({
+				fragments: {
+					0: fragment({
+						value: "foo",
+					}),
+				},
+			}),
+			removedSources: new Set(["a"]),
+		});
+		t.is(result.modifiedSources.size, 0);
+		t.true(processor.translationDataModified);
+		verifyFragments(t, processor.translationData, {});
+	}
 });
