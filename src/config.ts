@@ -113,7 +113,7 @@ export namespace Config {
 			plugins.push({ entry, config });
 		}
 
-		const rawOutputFilename = json.output?.filename ?? null;
+		const rawOutputFilename = json.output?.filename ?? "./dist/locale/[locale].json";
 		if (rawOutputFilename !== null && typeof rawOutputFilename !== "string") {
 			throw new TypeError("output.filename must be a string.");
 		}

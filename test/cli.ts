@@ -2,7 +2,7 @@ import test from "ava";
 import { join } from "path";
 
 import { Config } from "../src/config.js";
-import { execStart } from "./_utility/exec.js";
+import { exec } from "./_utility/exec.js";
 import { jsonFile } from "./_utility/json-file.js";
 import { createFsLayout } from "./_utility/temp-dir.js";
 
@@ -25,7 +25,7 @@ test.skip("foo", async t => {
 		},
 	});
 
-	await execStart(t, cwd, "node", [cliBin, "--config", "u27n.json", "--watch"]);
+	await exec(cwd, "node", [cliBin, "--config", "u27n.json"]);
 
 	t.pass();
 });

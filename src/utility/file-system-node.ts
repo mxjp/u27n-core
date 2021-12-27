@@ -1,6 +1,6 @@
 import chokidar from "chokidar";
-import { readdir, readFile, writeFile } from "fs/promises";
-import { join, relative, sep } from "path";
+import { mkdir, readdir, readFile, writeFile } from "fs/promises";
+import { dirname, join, relative, sep } from "path";
 import createMatcher, { Matcher, scan } from "picomatch";
 
 import { FileSystem } from "./file-system.js";
@@ -25,8 +25,9 @@ export class NodeFileSystem implements FileSystem {
 		}
 	}
 
-	public writeFile(filename: string, content: string): Promise<void> {
-		return writeFile(filename, content, "utf-8");
+	public async writeFile(filename: string, content: string): Promise<void> {
+		await mkdir(dirname(filename), { recursive: true });
+		await writeFile(filename, content, "utf-8");
 	}
 
 	public watchFiles(options: FileSystem.WatchFileOptions): () => Promise<void> {
