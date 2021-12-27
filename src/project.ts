@@ -73,6 +73,7 @@ export class Project {
 					updatedSources,
 					removedSources,
 					translationData,
+					modify: options.modify,
 				});
 
 				if (options.modify) {
@@ -125,6 +126,7 @@ export class Project {
 		const result = this.dataProcessor.applyUpdate({
 			translationData,
 			updatedSources: sources,
+			modify: options.modify,
 		});
 
 		if (options.modify) {

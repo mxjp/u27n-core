@@ -1,5 +1,6 @@
 import { Diagnostic } from "./diagnostics.js";
 import { Base62FragmentIdGenerator, FragmentIdGenerator } from "./fragment-id-generator.js";
+import { LocaleData } from "./locale-data.js";
 import type { Source } from "./source.js";
 import type { TranslationData } from "./translation-data.js";
 import { SourceFragmentMap } from "./utility/source-fragment-map.js";
@@ -62,6 +63,7 @@ export class DataProcessor {
 	 * Apply updates from disk to the project.
 	 */
 	public applyUpdate(update: DataProcessor.Update): DataProcessor.UpdateResult {
+		const modify = update.modify ?? true;
 		const modifiedSources = new Map<string, string>();
 
 		function updateSource(this: DataProcessor, source: Source, sourceId: string) {
@@ -73,7 +75,7 @@ export class DataProcessor {
 							&& !assignedFragmentIds.has(fragment.fragmentId)
 							&& (
 								!this.#sourceFragments.hasOtherSources(sourceId, fragment.fragmentId)
-								|| this.#translationDataView.isInSync(sourceId, fragment)
+								|| this.#translationDataView.getSyncFragment(sourceId, fragment) !== null
 							)
 						) {
 							assignedFragmentIds.add(fragment.fragmentId);
@@ -104,7 +106,7 @@ export class DataProcessor {
 			} else {
 				const staticFragments = source.fragmentMap;
 				staticFragments.forEach((fragment, fragmentId) => {
-					if (fragment.value !== undefined && !assignedFragmentIds.has(fragmentId) && !this.#sourceFragments.hasOtherSources(sourceId, fragmentId)) {
+					if (fragment.value !== null && !assignedFragmentIds.has(fragmentId) && !this.#sourceFragments.hasOtherSources(sourceId, fragmentId)) {
 						assignedFragmentIds.add(fragmentId);
 						this.#translationDataView.updateFragment(sourceId, fragmentId, {
 							enabled: fragment.enabled,
@@ -133,14 +135,16 @@ export class DataProcessor {
 
 		update.updatedSources?.forEach((source, sourceId) => {
 			this.#sources.set(sourceId, source);
-			updateSource.call(this, source, sourceId);
+			if (modify) {
+				updateSource.call(this, source, sourceId);
+			}
 		});
 
 		if (update.translationData) {
 			this.#sources.forEach((source, sourceId) => {
 				if (update.removedSources?.has(sourceId)) {
 					this.#sources.delete(sourceId);
-				} else if (!update.updatedSources?.has(sourceId)) {
+				} else if (!update.updatedSources?.has(sourceId) && modify) {
 					updateSource.call(this, source, sourceId);
 				}
 			});
@@ -150,9 +154,11 @@ export class DataProcessor {
 			});
 		}
 
-		this.#translationDataView.removeSources(sourceId => {
-			return !this.#sources.has(sourceId);
-		});
+		if (modify) {
+			this.#translationDataView.removeSources(sourceId => {
+				return !this.#sources.has(sourceId);
+			});
+		}
 
 		return { modifiedSources };
 	}
@@ -212,6 +218,59 @@ export class DataProcessor {
 
 		return diagnostics;
 	}
+
+	public generateLocaleData(options: DataProcessor.GenerateLocateDataOptions): Record<string, LocaleData> {
+		const data: Record<string, LocaleData> = {};
+
+		const { translatedLocales } = options;
+		for (let i = 0; i < translatedLocales.length; i++) {
+			data[translatedLocales[i]] = Object.create(null) as {};
+		}
+
+		function addValue(locale: string, namespace: string, fragmentId: string, value: LocaleData.Value): void {
+			let namespaces = data[locale];
+			if (namespaces === undefined) {
+				namespaces = data[locale] = Object.create(null) as {};
+			}
+			let fragments = namespaces[namespace];
+			if (fragments === undefined) {
+				fragments = namespaces[namespace] = Object.create(null) as {};
+			}
+			fragments[fragmentId] = value;
+		}
+
+		function toValue(translationDataValue: TranslationData.Value): LocaleData.Value {
+			if (typeof translationDataValue === "string") {
+				return translationDataValue;
+			} else if (translationDataValue !== null) {
+				switch (translationDataValue.type) {
+					case "plural": return translationDataValue.value;
+				}
+			}
+			throw new Error("invalid value");
+		}
+
+		this.#sources.forEach((source, sourceId) => {
+			source.fragments.forEach(fragment => {
+				const fragmentData = this.#translationDataView.getSyncFragment(sourceId, fragment);
+				// eslint-disable-next-line @typescript-eslint/prefer-optional-chain
+				if (fragmentData !== null && fragmentData.value !== null) {
+					const modified = Date.parse(fragmentData.modified);
+					for (let i = 0; i < translatedLocales.length; i++) {
+						const locale = translatedLocales[i];
+						const translation = fragmentData.translations[locale];
+						if (translation !== undefined
+							&& TranslationDataView.valueTypeEquals(fragmentData.value, translation.value)
+							&& (options.includeOutdated || Date.parse(translation.modified) >= modified)) {
+							addValue(locale, options.namespace, fragment.fragmentId!, toValue(translation.value));
+						}
+					}
+				}
+			});
+		});
+
+		return data;
+	}
 }
 
 export declare namespace DataProcessor {
@@ -231,6 +290,8 @@ export declare namespace DataProcessor {
 		removedSources?: Set<string>;
 		/** The initial or updated translation data from disk */
 		translationData?: TranslationData;
+		/** True to allow modifying sources */
+		modify?: boolean;
 	}
 
 	export interface UpdateResult {
@@ -240,5 +301,11 @@ export declare namespace DataProcessor {
 
 	export interface DiagnosticOptions {
 		translatedLocales: string[];
+	}
+
+	export interface GenerateLocateDataOptions {
+		namespace: string;
+		translatedLocales: string[];
+		includeOutdated: boolean;
 	}
 }

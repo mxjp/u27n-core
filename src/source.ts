@@ -95,7 +95,7 @@ export declare namespace Source {
 		/** The id of the fragment or undefined if no id is assigned */
 		fragmentId?: string;
 		/** The value of the fragment or undefined if the current value is invalid for any reason */
-		value?: TranslationData.Value;
+		value: TranslationData.Value;
 		/** False if the fragment is commented out */
 		enabled: boolean;
 		/** The inclusive start offset */

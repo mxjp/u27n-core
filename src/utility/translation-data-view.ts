@@ -114,23 +114,24 @@ export class TranslationDataView {
 	}
 
 	/**
-	 * Check if a fragment is in sync with this translation data.
+	 * Get a translation data fragment if it is in sync with the specified source fragment.
 	 *
-	 * @returns true if the fragment has a value and the value, source id and enabled flag matches the translation data.
-	 * @throws An error if the fragment has no id.
+	 * @returns The translation data fragment if it's value, source id and flags match the source fragment.
 	 */
-	public isInSync(sourceId: string, fragment: Source.Fragment): boolean {
+	public getSyncFragment(sourceId: string, fragment: Source.Fragment): TranslationData.Fragment | null {
 		if (fragment.fragmentId === undefined) {
-			throw new Error("fragment must have a fragment id");
+			return null;
 		}
-		if (fragment.value !== undefined) {
+		if (fragment.value !== null) {
 			const data = this.data.fragments[fragment.fragmentId];
-			return data !== undefined
+			if (data !== undefined
 				&& data.sourceId === sourceId
 				&& TranslationDataView.#jsonEquals(fragment.value, data.value)
-				&& fragment.enabled === data.enabled;
+				&& fragment.enabled === data.enabled) {
+				return data;
+			}
 		}
-		return false;
+		return null;
 	}
 
 	/**
@@ -195,6 +196,21 @@ export class TranslationDataView {
 	 */
 	static #createTimestamp(date: Date = new Date()): string {
 		return date.toISOString();
+	}
+
+	/**
+	 * Check if two translation data values are of the same type.
+	 */
+	public static valueTypeEquals(a: TranslationData.Value, b: TranslationData.Value): boolean {
+		if (a === null || b === null) {
+			return false;
+		}
+		if (typeof a === "string") {
+			return typeof b === "string";
+		}
+		return typeof b === "string"
+			? false
+			: a.type === b.type;
 	}
 }
 

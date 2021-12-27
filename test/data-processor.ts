@@ -71,6 +71,82 @@ test(`${DataProcessor.prototype.applyUpdate.name} (state in sync)`, t => {
 	t.is(result.modifiedSources.size, 0);
 });
 
+for (const [name, ...updates] of ([
+	["missing id", {
+		updatedSources: new Map([
+			["a", new TestSource(`
+				foo 42
+				bar
+			`)],
+			["b", new TestSource(`
+				baz 0
+			`)],
+		]),
+		translationData: translationData({
+			fragments: {
+				0: fragment({ sourceId: "b", value: "baz" }),
+			},
+		}),
+	}],
+	["duplicate id, no data", {
+		updatedSources: new Map([
+			["a", new TestSource(`
+				foo 0
+				bar 0
+			`)],
+		]),
+	}],
+	["removed source", {
+		updatedSources: new Map([
+			["a", new TestSource(`
+				foo 0
+			`)],
+		]),
+	}, {
+		removedSources: new Set(["a"]),
+	}],
+	["missing source", {
+		translationData: translationData({
+			fragments: {
+				0: fragment({}),
+			},
+		}),
+	}],
+	["data update, add source", {
+		updatedSources: new Map([
+			["a", new TestSource(`
+				foo 0
+			`)],
+		]),
+	}, {
+		translationData: translationData({
+			fragments: {
+				1: fragment({
+					value: "bar",
+				}),
+			},
+		}),
+		updatedSources: new Map([
+			["b", new TestSource(`
+				bar 1
+			`)],
+		]),
+	}],
+] as [string, ...DataProcessor.Update[]][])) {
+	test(`${DataProcessor.prototype.applyUpdate.name} (modify disabled, ${name})`, async t => {
+		const processor = new DataProcessor();
+
+		for (let i = 0; i < updates.length; i++) {
+			const result = processor.applyUpdate({
+				...updates[i],
+				modify: false,
+			});
+			t.false(processor.translationDataModified);
+			t.is(result.modifiedSources.size, 0);
+		}
+	});
+}
+
 test(`${DataProcessor.prototype.applyUpdate.name} (missing id)`, async t => {
 	const processor = new DataProcessor();
 	const result = processor.applyUpdate({
@@ -607,4 +683,91 @@ test(`${DataProcessor.prototype.getFragmentDiagnostics.name} (duplicate fragment
 			fragmentId: "0",
 		},
 	]);
+});
+
+test(`${DataProcessor.prototype.generateLocaleData.name}`, t => {
+	const processor = new DataProcessor();
+	const modified = new Date().toISOString();
+
+	processor.applyUpdate({
+		translationData: translationData({
+			fragments: {
+				0: fragment({
+					value: "foo",
+					sourceId: "a",
+					modified,
+					translations: {
+						en: { value: "test", modified },
+					},
+				}),
+				1: fragment({
+					value: "bar",
+					sourceId: "a",
+					modified,
+					translations: {
+						en: { value: "test", modified: new Date(Date.parse(modified) - 1000).toISOString() },
+					},
+				}),
+				2: fragment({
+					value: "boo",
+					sourceId: "a",
+					modified,
+					translations: {
+						en: { value: "test", modified },
+					},
+				}),
+				3: fragment({
+					value: "test",
+					sourceId: "a",
+					modified,
+					translations: {
+						en: { value: { type: "plural", value: ["a", "b"] }, modified },
+					},
+				}),
+				4: fragment({
+					sourceId: "a",
+					modified,
+					translations: {
+						en: { value: "test", modified },
+					},
+				}),
+			},
+		}),
+		updatedSources: new Map([
+			["a", new TestSource(`
+				foo 0
+				bar 1
+				baz 2
+				test 3
+			`)],
+		]),
+		modify: false,
+	});
+
+	t.deepEqual(processor.generateLocaleData({
+		namespace: "test",
+		includeOutdated: false,
+		translatedLocales: ["en", "ch"],
+	}), {
+		en: {
+			test: {
+				0: "test",
+			},
+		},
+		ch: {},
+	});
+
+	t.deepEqual(processor.generateLocaleData({
+		namespace: "test",
+		includeOutdated: true,
+		translatedLocales: ["en", "ch"],
+	}), {
+		en: {
+			test: {
+				0: "test",
+				1: "test",
+			},
+		},
+		ch: {},
+	});
 });
