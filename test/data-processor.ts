@@ -1,6 +1,7 @@
 import test, { ExecutionContext } from "ava";
 
 import { DataProcessor } from "../src/data-processor.js";
+import { LocaleData } from "../src/locale-data.js";
 import { TranslationData } from "../src/translation-data.js";
 import { TestSource } from "./_utility/test-source.js";
 import { unindent } from "./_utility/unindent.js";
@@ -748,26 +749,26 @@ test(`${DataProcessor.prototype.generateLocaleData.name}`, t => {
 		namespace: "test",
 		includeOutdated: false,
 		translatedLocales: ["en", "ch"],
-	}), {
-		en: {
+	}), new Map<string, LocaleData>([
+		["en", {
 			test: {
 				0: "test",
 			},
-		},
-		ch: {},
-	});
+		}],
+		["ch", {}],
+	]));
 
 	t.deepEqual(processor.generateLocaleData({
 		namespace: "test",
 		includeOutdated: true,
 		translatedLocales: ["en", "ch"],
-	}), {
-		en: {
+	}), new Map<string, LocaleData>([
+		["en", {
 			test: {
 				0: "test",
 				1: "test",
 			},
-		},
-		ch: {},
-	});
+		}],
+		["ch", {}],
+	]));
 });

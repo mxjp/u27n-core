@@ -88,12 +88,12 @@ export class Project {
 
 				if (options.fragmentDiagnostics) {
 					diagnostics = diagnostics.concat(this.dataProcessor.getFragmentDiagnostics({
-						translatedLocales: this.config.locales.slice(1),
+						translatedLocales: this.config.translatedLocales,
 					}));
 				}
 
 				if (options.output) {
-					// TODO: Write output.
+					await this.#generateOutput();
 				}
 
 				options.onDiagnostics?.(diagnostics);
@@ -145,15 +145,30 @@ export class Project {
 
 		if (options.fragmentDiagnostics) {
 			diagnostics = diagnostics.concat(this.dataProcessor.getFragmentDiagnostics({
-				translatedLocales: this.config.locales.slice(1),
+				translatedLocales: this.config.translatedLocales,
 			}));
 		}
 
 		if (options.output) {
-			// TODO: Write output.
+			await this.#generateOutput();
 		}
 
 		return { diagnostics };
+	}
+
+	async #generateOutput(): Promise<void> {
+		if (this.config.output.filename) {
+			const data = this.dataProcessor.generateLocaleData({
+				namespace: this.config.namespace,
+				translatedLocales: this.config.translatedLocales,
+				includeOutdated: this.config.output.includeOutdated,
+			});
+
+			for (const [locale, localeData] of data) {
+				const filename = Config.getOutputFilename(this.config.output.filename, locale);
+				await this.fileSystem.writeFile(filename, JSON.stringify(localeData));
+			}
+		}
 	}
 
 	async #createSource(filename: string): Promise<Source | undefined> {

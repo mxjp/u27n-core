@@ -9,20 +9,22 @@ export interface Config {
 	readonly translationData: string;
 	readonly namespace: string;
 	readonly include: string[];
-	readonly locales: string[];
+	readonly sourceLocale: string;
+	readonly translatedLocales: string[];
 	readonly plugins: Config.Plugin[];
-	readonly output: string | null;
+	readonly output: Config.Output;
 	readonly diagnostics: DiagnosticSeverityConfig;
 }
 
 export namespace Config {
+
 	export interface Json {
 		translationData?: string;
 		namespace?: string;
 		include?: string[];
 		locales?: string[];
 		plugins?: (string | PluginJson)[];
-		output?: string;
+		output?: OutputJson;
 		diagnostics?: DiagnosticSeverityConfig;
 	}
 
@@ -34,6 +36,20 @@ export namespace Config {
 	export interface Plugin {
 		readonly entry: string;
 		readonly config: unknown;
+	}
+
+	export interface OutputJson {
+		filename?: string | null;
+		includeOutdated?: boolean;
+	}
+
+	export interface Output {
+		filename: string | null;
+		includeOutdated: boolean;
+	}
+
+	export function getOutputFilename(filenameTemplate: string, locale: string): string {
+		return filenameTemplate.replace(/\[locale\]/g, locale);
 	}
 
 	export async function read(filename: string): Promise<Config> {
@@ -97,7 +113,16 @@ export namespace Config {
 			plugins.push({ entry, config });
 		}
 
-		const output = json.output ? resolve(context, json.output ?? "./dist/locale/[locale].json") : null;
+		const rawOutputFilename = json.output?.filename ?? null;
+		if (rawOutputFilename !== null && typeof rawOutputFilename !== "string") {
+			throw new TypeError("output.filename must be a string.");
+		}
+		const outputFilename = rawOutputFilename ? resolve(context, rawOutputFilename) : null;
+
+		const outputIncludeOutdated = json.output?.includeOutdated ?? false;
+		if (typeof outputIncludeOutdated !== "boolean") {
+			throw new TypeError("output.includeOutdated must be a boolean.");
+		}
 
 		const diagnostics = json.diagnostics ?? {};
 		if (typeof diagnostics !== "object" || diagnostics === null || Array.isArray(diagnostics)) {
@@ -114,9 +139,13 @@ export namespace Config {
 			translationData,
 			namespace,
 			include,
-			locales,
+			sourceLocale: locales[0],
+			translatedLocales: locales.slice(1),
 			plugins,
-			output,
+			output: {
+				filename: outputFilename,
+				includeOutdated: outputIncludeOutdated,
+			},
 			diagnostics,
 		};
 	}

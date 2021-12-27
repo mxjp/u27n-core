@@ -219,19 +219,16 @@ export class DataProcessor {
 		return diagnostics;
 	}
 
-	public generateLocaleData(options: DataProcessor.GenerateLocateDataOptions): Record<string, LocaleData> {
-		const data: Record<string, LocaleData> = {};
+	public generateLocaleData(options: DataProcessor.GenerateLocateDataOptions): Map<string, LocaleData> {
+		const data = new Map<string, LocaleData>();
 
 		const { translatedLocales } = options;
 		for (let i = 0; i < translatedLocales.length; i++) {
-			data[translatedLocales[i]] = Object.create(null) as {};
+			data.set(translatedLocales[i], Object.create(null) as {});
 		}
 
 		function addValue(locale: string, namespace: string, fragmentId: string, value: LocaleData.Value): void {
-			let namespaces = data[locale];
-			if (namespaces === undefined) {
-				namespaces = data[locale] = Object.create(null) as {};
-			}
+			const namespaces = data.get(locale)!;
 			let fragments = namespaces[namespace];
 			if (fragments === undefined) {
 				fragments = namespaces[namespace] = Object.create(null) as {};
