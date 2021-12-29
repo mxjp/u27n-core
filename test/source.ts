@@ -52,8 +52,6 @@ test("fragments / fragmentMap", t => {
 test("filenameToSourceId", t => {
 	t.is(Source.filenameToSourceId("/foo", "/foo/bar/baz"), "bar/baz");
 	t.is(Source.filenameToSourceId("/foo", "/bar"), "../bar");
-	t.is(Source.filenameToSourceId("C:\\foo", "C:\\foo\\bar\\baz"), "bar/baz");
-	t.is(Source.filenameToSourceId("C:\\foo", "C:\\bar"), "../bar");
 });
 
 test("sourceIdToFilename", t => {
