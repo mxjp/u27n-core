@@ -1,17 +1,33 @@
 import test from "ava";
-import { join } from "path";
+import { readdir, readFile, writeFile } from "fs/promises";
+import { join, resolve } from "path";
 
 import { Config } from "../src/config.js";
-import { exec } from "./_utility/exec.js";
+import { Diagnostic, getDiagnosticMessage } from "../src/diagnostics.js";
+import { LocaleData } from "../src/locale-data.js";
+import { TranslationData } from "../src/translation-data.js";
+import { exec, execStart } from "./_utility/exec.js";
 import { jsonFile } from "./_utility/json-file.js";
 import { createFsLayout } from "./_utility/temp-dir.js";
+import { TranslationDataUtility as td } from "./_utility/translation-data.js";
+import { unindent } from "./_utility/unindent.js";
+import { wait } from "./_utility/wait.js";
 
 const cliBin = join(__dirname, "../src/cli.js");
 
-test.skip("foo", async t => {
-	const cwd = await createFsLayout(__filename, t, {
+const cliConfig = ["--config", "u27n.json"];
+
+function cliArgs(...args: string[]): [string, string[]] {
+	return ["node", [cliBin, ...args]];
+}
+
+function configFile(overwrite?: Partial<Config.Json>): Record<string, string> {
+	return {
 		"u27n.json": jsonFile<Config.Json>({
 			namespace: "test",
+			include: [
+				"./src/**/*.txt",
+			],
 			locales: [
 				"en",
 				"de",
@@ -19,13 +35,144 @@ test.skip("foo", async t => {
 			plugins: [
 				"../../test_out/test/_utility/test-plugin",
 			],
+			output: {
+				filename: "./locale/[locale].json",
+				includeOutdated: false,
+				...overwrite?.output,
+			},
+			...overwrite,
 		}),
-		"src": {
-			"test.txt": `test 42\nbar`,
+	};
+}
+
+function translationData(data: Partial<TranslationData>): Record<string, string> {
+	return {
+		"u27n-data.json": TranslationData.formatJson(td.translationData(data)),
+	};
+}
+
+async function readTranslationData(cwd: string, path = "u27n-data.json"): Promise<TranslationData> {
+	return TranslationData.parseJson(await readFile(join(cwd, path), "utf-8"));
+}
+
+async function readLocaleData(cwd: string, path = "locale"): Promise<Map<string, LocaleData>> {
+	const dirname = resolve(cwd, path);
+	const data = new Map<string, LocaleData>();
+	for (const name of await readdir(dirname)) {
+		const match = /^(.*)\.json$/.exec(name);
+		if (match) {
+			data.set(match[1], JSON.parse(await readFile(join(dirname, name), "utf-8")) as LocaleData);
+		}
+	}
+	return data;
+}
+
+function hasDiagnostic(output: string, diagnostic: Diagnostic): boolean {
+	return output.includes(getDiagnosticMessage(diagnostic));
+}
+
+test("empty project, no translation data", async t => {
+	const cwd = await createFsLayout(__filename, t, {
+		...configFile(),
+		src: {},
+	});
+	await exec(t, cwd, ...cliArgs(...cliConfig));
+	t.deepEqual(await readLocaleData(cwd), new Map([
+		["de", {}],
+	]));
+});
+
+test("sync project", async t => {
+	const modified = new Date().toISOString();
+	const cwd = await createFsLayout(__filename, t, {
+		...configFile(),
+		...translationData({
+			fragments: {
+				0: td.fragment({
+					value: "foo",
+					sourceId: "src/foo.txt",
+					modified,
+					translations: {
+						de: { value: "bar", modified },
+					},
+				}),
+			},
+		}),
+		src: {
+			"foo.txt": unindent(`
+				foo 0
+			`),
+			"something-else.json": unindent(`{}`),
+		},
+	});
+	await exec(t, cwd, ...cliArgs(...cliConfig));
+	t.deepEqual(await readLocaleData(cwd), new Map([
+		["de", {
+			test: {
+				0: "bar",
+			},
+		}],
+	]));
+});
+
+test("out of sync project", async t => {
+	const cwd = await createFsLayout(__filename, t, {
+		...configFile(),
+		...translationData({}),
+		src: {
+			"foo.txt": unindent(`
+				foo 0
+			`),
+			"something-else.json": unindent(`{}`),
 		},
 	});
 
-	await exec(cwd, "node", [cliBin, "--config", "u27n.json"]);
+	const { output } = await exec(t, cwd, ...cliArgs(...cliConfig), {
+		expectStatus: 1,
+	});
 
-	t.pass();
+	t.true(hasDiagnostic(output, {
+		type: "projectOutOfSync",
+	}));
+	t.true(hasDiagnostic(output, {
+		type: "missingTranslations",
+		sourceId: "src/foo.txt",
+		fragmentId: "0",
+		locales: ["de"],
+	}));
+
+	t.deepEqual(await readLocaleData(cwd), new Map([
+		["de", {}],
+	]));
+});
+
+test("watch project", async t => {
+	const cwd = await createFsLayout(__filename, t, {
+		...configFile(),
+		src: {},
+	});
+	const cli = await execStart(t, cwd, ...cliArgs(...cliConfig, "--watch"));
+	try {
+		await writeFile(join(cwd, "src/test.txt"), unindent(`
+			foo 0
+		`));
+		await wait(async () => {
+			const data = await readTranslationData(cwd);
+			if ("0" in data.fragments) {
+				return data;
+			}
+		})!;
+		await writeFile(join(cwd, "src/test2.txt"), unindent(`
+			bar 0
+		`));
+		await wait(async () => {
+			const data = await readTranslationData(cwd);
+			if ("1" in data.fragments) {
+				return data;
+			}
+		})!;
+		t.pass();
+	} finally {
+		await cli.kill();
+	}
 });

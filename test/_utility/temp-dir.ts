@@ -14,7 +14,7 @@ export async function createTempDir(moduleFilename: string, t: ExecutionContext)
 		.replace(/[^a-z0-9]+/ig, "-");
 
 	const title = t.title
-		.replace(/[^a-z0-9]/ig, "-")
+		.replace(/[^a-z0-9]+/ig, "-")
 		.replace(/^-+|-+$/g, "");
 
 	const name = `${moduleFilename}.${title}`;

@@ -6,6 +6,6 @@ export function unindent(code: string): string {
 			return line.startsWith(indent[1]!)
 				? line.slice(indent[1]!.length)
 				: line.replace(/^\s+/, "");
-		}).join("\n").replace(/^\n+/, "")
-		: code;
+		}).join("\n").replace(/^\n+/, "").trim()
+		: code.trim();
 }

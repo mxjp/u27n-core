@@ -1,45 +1,10 @@
-import test, { ExecutionContext } from "ava";
+import test from "ava";
 
 import { DataProcessor } from "../src/data-processor.js";
 import { LocaleData } from "../src/locale-data.js";
-import { TranslationData } from "../src/translation-data.js";
 import { TestSource } from "./_utility/test-source.js";
+import { TranslationDataUtility as td } from "./_utility/translation-data.js";
 import { unindent } from "./_utility/unindent.js";
-
-function verifyFragments(t: ExecutionContext, data: TranslationData, partialExpected: Record<string, Partial<TranslationData.Fragment>>): void {
-	const expected: Record<string, TranslationData.Fragment> = {};
-	for (const fragmentId in partialExpected) {
-		expected[fragmentId] = {
-			...data.fragments[fragmentId],
-			...partialExpected[fragmentId],
-		};
-	}
-	t.deepEqual(data.fragments, expected);
-}
-
-function fragment(data: Partial<TranslationData.Fragment>): TranslationData.Fragment {
-	return {
-		enabled: true,
-		value: "test",
-		modified: new Date().toISOString(),
-		sourceId: "test",
-		translations: {},
-		...data,
-	};
-}
-
-function translationData(data: Partial<TranslationData>): TranslationData {
-	return {
-		version: 1,
-		fragments: {},
-		obsolete: [],
-		...data,
-	};
-}
-
-function source(code: string): string {
-	return unindent(code).trim();
-}
 
 test(`${DataProcessor.prototype.applyUpdate.name} (empty update)`, t => {
 	const dataProcessor = new DataProcessor();
@@ -60,11 +25,11 @@ test(`${DataProcessor.prototype.applyUpdate.name} (state in sync)`, t => {
 				baz 2
 			`)],
 		]),
-		translationData: translationData({
+		translationData: td.translationData({
 			fragments: {
-				0: fragment({ sourceId: "a", value: "foo" }),
-				1: fragment({ sourceId: "a", value: "bar" }),
-				2: fragment({ sourceId: "b", value: "baz" }),
+				0: td.fragment({ sourceId: "a", value: "foo" }),
+				1: td.fragment({ sourceId: "a", value: "bar" }),
+				2: td.fragment({ sourceId: "b", value: "baz" }),
 			},
 		}),
 	});
@@ -83,9 +48,9 @@ for (const [name, ...updates] of ([
 				baz 0
 			`)],
 		]),
-		translationData: translationData({
+		translationData: td.translationData({
 			fragments: {
-				0: fragment({ sourceId: "b", value: "baz" }),
+				0: td.fragment({ sourceId: "b", value: "baz" }),
 			},
 		}),
 	}],
@@ -107,9 +72,9 @@ for (const [name, ...updates] of ([
 		removedSources: new Set(["a"]),
 	}],
 	["missing source", {
-		translationData: translationData({
+		translationData: td.translationData({
 			fragments: {
-				0: fragment({}),
+				0: td.fragment({}),
 			},
 		}),
 	}],
@@ -120,9 +85,9 @@ for (const [name, ...updates] of ([
 			`)],
 		]),
 	}, {
-		translationData: translationData({
+		translationData: td.translationData({
 			fragments: {
-				1: fragment({
+				1: td.fragment({
 					value: "bar",
 				}),
 			},
@@ -160,14 +125,14 @@ test(`${DataProcessor.prototype.applyUpdate.name} (missing id)`, async t => {
 				baz 0
 			`)],
 		]),
-		translationData: translationData({
+		translationData: td.translationData({
 			fragments: {
-				0: fragment({ sourceId: "b", value: "baz" }),
+				0: td.fragment({ sourceId: "b", value: "baz" }),
 			},
 		}),
 	});
 	t.true(processor.translationDataModified);
-	verifyFragments(t, processor.translationData, {
+	td.verifyFragments(t, processor.translationData, {
 		0: { sourceId: "b", value: "baz" },
 		1: { sourceId: "a", value: "bar" },
 		42: { sourceId: "a", value: "foo" },
@@ -176,7 +141,7 @@ test(`${DataProcessor.prototype.applyUpdate.name} (missing id)`, async t => {
 	t.false(processor.translationDataModified);
 
 	t.deepEqual(result.modifiedSources, new Map([
-		["a", source(`
+		["a", unindent(`
 			foo 42
 			bar 1
 		`)],
@@ -197,16 +162,16 @@ test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, multiple source
 	});
 
 	t.true(processor.translationDataModified);
-	verifyFragments(t, processor.translationData, {
+	td.verifyFragments(t, processor.translationData, {
 		1: { sourceId: "a", value: "foo" },
 		2: { sourceId: "b", value: "bar" },
 	});
 
 	t.deepEqual(result.modifiedSources, new Map([
-		["a", source(`
+		["a", unindent(`
 			foo 1
 		`)],
-		["b", source(`
+		["b", unindent(`
 			bar 2
 		`)],
 	]));
@@ -224,13 +189,13 @@ test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, single source, 
 	});
 
 	t.true(processor.translationDataModified);
-	verifyFragments(t, processor.translationData, {
+	td.verifyFragments(t, processor.translationData, {
 		0: { sourceId: "a", value: "foo" },
 		1: { sourceId: "a", value: "bar" },
 	});
 
 	t.deepEqual(result.modifiedSources, new Map([
-		["a", source(`
+		["a", unindent(`
 			foo 0
 			bar 1
 		`)],
@@ -248,21 +213,21 @@ test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, multiple source
 				bar 0
 			`)],
 		]),
-		translationData: translationData({
+		translationData: td.translationData({
 			fragments: {
-				0: fragment({ sourceId: "b", value: "bar" }),
+				0: td.fragment({ sourceId: "b", value: "bar" }),
 			},
 		}),
 	});
 
 	t.true(processor.translationDataModified);
-	verifyFragments(t, processor.translationData, {
+	td.verifyFragments(t, processor.translationData, {
 		0: { sourceId: "b", value: "bar" },
 		1: { sourceId: "a", value: "foo" },
 	});
 
 	t.deepEqual(result.modifiedSources, new Map([
-		["a", source(`
+		["a", unindent(`
 			foo 1
 		`)],
 	]));
@@ -277,21 +242,21 @@ test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, single source, 
 				bar 0
 			`)],
 		]),
-		translationData: translationData({
+		translationData: td.translationData({
 			fragments: {
-				0: fragment({ sourceId: "b", value: "bar" }),
+				0: td.fragment({ sourceId: "b", value: "bar" }),
 			},
 		}),
 	});
 
 	t.true(processor.translationDataModified);
-	verifyFragments(t, processor.translationData, {
+	td.verifyFragments(t, processor.translationData, {
 		0: { sourceId: "a", value: "foo" },
 		1: { sourceId: "a", value: "bar" },
 	});
 
 	t.deepEqual(result.modifiedSources, new Map([
-		["a", source(`
+		["a", unindent(`
 			foo 0
 			bar 1
 		`)],
@@ -309,24 +274,24 @@ test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, multiple source
 				bar 0
 			`)],
 		]),
-		translationData: translationData({
+		translationData: td.translationData({
 			fragments: {
-				0: fragment({ sourceId: "a", value: "baz" }),
+				0: td.fragment({ sourceId: "a", value: "baz" }),
 			},
 		}),
 	});
 
 	t.true(processor.translationDataModified);
-	verifyFragments(t, processor.translationData, {
+	td.verifyFragments(t, processor.translationData, {
 		1: { sourceId: "a", value: "foo" },
 		2: { sourceId: "b", value: "bar" },
 	});
 
 	t.deepEqual(result.modifiedSources, new Map([
-		["a", source(`
+		["a", unindent(`
 			foo 1
 		`)],
-		["b", source(`
+		["b", unindent(`
 			bar 2
 		`)],
 	]));
@@ -341,21 +306,21 @@ test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, single source, 
 				bar 0
 			`)],
 		]),
-		translationData: translationData({
+		translationData: td.translationData({
 			fragments: {
-				0: fragment({ sourceId: "a", value: "baz" }),
+				0: td.fragment({ sourceId: "a", value: "baz" }),
 			},
 		}),
 	});
 
 	t.true(processor.translationDataModified);
-	verifyFragments(t, processor.translationData, {
+	td.verifyFragments(t, processor.translationData, {
 		0: { sourceId: "a", value: "foo" },
 		1: { sourceId: "a", value: "bar" },
 	});
 
 	t.deepEqual(result.modifiedSources, new Map([
-		["a", source(`
+		["a", unindent(`
 			foo 0
 			bar 1
 		`)],
@@ -372,7 +337,7 @@ test(`${DataProcessor.prototype.applyUpdate.name} (remove source)`, t => {
 			`)],
 		]),
 	});
-	verifyFragments(t, processor.translationData, {
+	td.verifyFragments(t, processor.translationData, {
 		0: { sourceId: "a", value: "foo" },
 	});
 	processor.translationDataModified = false;
@@ -384,21 +349,21 @@ test(`${DataProcessor.prototype.applyUpdate.name} (remove source)`, t => {
 	t.is(result.modifiedSources.size, 0);
 
 	t.true(processor.translationDataModified);
-	verifyFragments(t, processor.translationData, {});
+	td.verifyFragments(t, processor.translationData, {});
 });
 
 test(`${DataProcessor.prototype.applyUpdate.name} (missing source)`, t => {
 	const processor = new DataProcessor();
 	const result = processor.applyUpdate({
-		translationData: translationData({
+		translationData: td.translationData({
 			fragments: {
-				0: fragment({}),
+				0: td.fragment({}),
 			},
 		}),
 	});
 	t.is(result.modifiedSources.size, 0);
 	t.true(processor.translationDataModified);
-	verifyFragments(t, processor.translationData, {});
+	td.verifyFragments(t, processor.translationData, {});
 });
 
 test(`${DataProcessor.prototype.applyUpdate.name} (data update, add source)`, async t => {
@@ -417,9 +382,9 @@ test(`${DataProcessor.prototype.applyUpdate.name} (data update, add source)`, as
 	}
 	{
 		const result = processor.applyUpdate({
-			translationData: translationData({
+			translationData: td.translationData({
 				fragments: {
-					1: fragment({
+					1: td.fragment({
 						value: "bar",
 					}),
 				},
@@ -432,7 +397,7 @@ test(`${DataProcessor.prototype.applyUpdate.name} (data update, add source)`, as
 		});
 		t.is(result.modifiedSources.size, 0);
 		t.true(processor.translationDataModified);
-		verifyFragments(t, processor.translationData, {
+		td.verifyFragments(t, processor.translationData, {
 			0: { sourceId: "a", value: "foo" },
 			1: { sourceId: "b", value: "bar" },
 		});
@@ -455,7 +420,7 @@ test(`${DataProcessor.prototype.applyUpdate.name} (data update, update source)`,
 	}
 	{
 		const result = processor.applyUpdate({
-			translationData: translationData({
+			translationData: td.translationData({
 				fragments: {},
 			}),
 			updatedSources: new Map([
@@ -466,7 +431,7 @@ test(`${DataProcessor.prototype.applyUpdate.name} (data update, update source)`,
 		});
 		t.is(result.modifiedSources.size, 0);
 		t.true(processor.translationDataModified);
-		verifyFragments(t, processor.translationData, {
+		td.verifyFragments(t, processor.translationData, {
 			0: { sourceId: "a", value: "bar" },
 		});
 	}
@@ -488,9 +453,9 @@ test(`${DataProcessor.prototype.applyUpdate.name} (data update, removed source)`
 	}
 	{
 		const result = processor.applyUpdate({
-			translationData: translationData({
+			translationData: td.translationData({
 				fragments: {
-					0: fragment({
+					0: td.fragment({
 						value: "foo",
 					}),
 				},
@@ -499,7 +464,7 @@ test(`${DataProcessor.prototype.applyUpdate.name} (data update, removed source)`
 		});
 		t.is(result.modifiedSources.size, 0);
 		t.true(processor.translationDataModified);
-		verifyFragments(t, processor.translationData, {});
+		td.verifyFragments(t, processor.translationData, {});
 	}
 });
 
@@ -514,20 +479,20 @@ test(`${DataProcessor.prototype.getFragmentDiagnostics.name} (missing translatio
 	const processor = new DataProcessor();
 	const modified = new Date().toISOString();
 	processor.applyUpdate({
-		translationData: translationData({
+		translationData: td.translationData({
 			fragments: {
-				0: fragment({
+				0: td.fragment({
 					value: "foo",
 					modified: modified,
 				}),
-				1: fragment({
+				1: td.fragment({
 					value: "bar",
 					modified: modified,
 					translations: {
 						de: { value: "test", modified },
 					},
 				}),
-				2: fragment({
+				2: td.fragment({
 					value: "baz",
 					modified: modified,
 					translations: {
@@ -567,9 +532,9 @@ test(`${DataProcessor.prototype.getFragmentDiagnostics.name} (unknown translatio
 	const processor = new DataProcessor();
 	const modified = new Date().toISOString();
 	processor.applyUpdate({
-		translationData: translationData({
+		translationData: td.translationData({
 			fragments: {
-				0: fragment({
+				0: td.fragment({
 					value: "foo",
 					modified,
 					translations: {
@@ -577,7 +542,7 @@ test(`${DataProcessor.prototype.getFragmentDiagnostics.name} (unknown translatio
 						ch: { value: "test", modified },
 					},
 				}),
-				1: fragment({
+				1: td.fragment({
 					value: "bar",
 					modified,
 					translations: {
@@ -609,9 +574,9 @@ test(`${DataProcessor.prototype.getFragmentDiagnostics.name} (outdated translati
 	const processor = new DataProcessor();
 	const modified = new Date().toISOString();
 	processor.applyUpdate({
-		translationData: translationData({
+		translationData: td.translationData({
 			fragments: {
-				0: fragment({
+				0: td.fragment({
 					value: "foo",
 					modified,
 					translations: {
@@ -619,7 +584,7 @@ test(`${DataProcessor.prototype.getFragmentDiagnostics.name} (outdated translati
 						ch: { value: "test", modified: new Date(Date.parse(modified) - 1000).toISOString() },
 					},
 				}),
-				1: fragment({
+				1: td.fragment({
 					value: "bar",
 					modified,
 					translations: {
@@ -652,9 +617,9 @@ test(`${DataProcessor.prototype.getFragmentDiagnostics.name} (duplicate fragment
 	const processor = new DataProcessor();
 	const modified = new Date().toISOString();
 	processor.applyUpdate({
-		translationData: translationData({
+		translationData: td.translationData({
 			fragments: {
-				1: fragment({
+				1: td.fragment({
 					value: "baz",
 					sourceId: "b",
 					modified,
@@ -691,9 +656,9 @@ test(`${DataProcessor.prototype.generateLocaleData.name}`, t => {
 	const modified = new Date().toISOString();
 
 	processor.applyUpdate({
-		translationData: translationData({
+		translationData: td.translationData({
 			fragments: {
-				0: fragment({
+				0: td.fragment({
 					value: "foo",
 					sourceId: "a",
 					modified,
@@ -701,7 +666,7 @@ test(`${DataProcessor.prototype.generateLocaleData.name}`, t => {
 						en: { value: "test", modified },
 					},
 				}),
-				1: fragment({
+				1: td.fragment({
 					value: "bar",
 					sourceId: "a",
 					modified,
@@ -709,7 +674,7 @@ test(`${DataProcessor.prototype.generateLocaleData.name}`, t => {
 						en: { value: "test", modified: new Date(Date.parse(modified) - 1000).toISOString() },
 					},
 				}),
-				2: fragment({
+				2: td.fragment({
 					value: "boo",
 					sourceId: "a",
 					modified,
@@ -717,7 +682,7 @@ test(`${DataProcessor.prototype.generateLocaleData.name}`, t => {
 						en: { value: "test", modified },
 					},
 				}),
-				3: fragment({
+				3: td.fragment({
 					value: "test",
 					sourceId: "a",
 					modified,
@@ -725,7 +690,7 @@ test(`${DataProcessor.prototype.generateLocaleData.name}`, t => {
 						en: { value: { type: "plural", value: ["a", "b"] }, modified },
 					},
 				}),
-				4: fragment({
+				4: td.fragment({
 					sourceId: "a",
 					modified,
 					translations: {
