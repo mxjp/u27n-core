@@ -6,7 +6,7 @@ import { DiagnosticSeverityConfig, DiagnosticType, diagnosticTypes } from "./dia
 
 export interface Config {
 	readonly context: string;
-	readonly translationData: string;
+	readonly translationData: Config.TranslationData;
 	readonly namespace: string;
 	readonly include: string[];
 	readonly sourceLocale: string;
@@ -17,9 +17,8 @@ export interface Config {
 }
 
 export namespace Config {
-
 	export interface Json {
-		translationData?: string;
+		translationData?: TranslationDataJson;
 		namespace?: string;
 		include?: string[];
 		locales?: string[];
@@ -36,6 +35,16 @@ export namespace Config {
 	export interface Plugin {
 		readonly entry: string;
 		readonly config: unknown;
+	}
+
+	export interface TranslationData {
+		filename: string;
+		sorted: boolean;
+	}
+
+	export interface TranslationDataJson {
+		filename?: string;
+		sorted?: boolean;
 	}
 
 	export interface OutputJson {
@@ -57,7 +66,11 @@ export namespace Config {
 	}
 
 	export async function fromJson(json: Json, context: string): Promise<Config> {
-		const translationData = resolve(context, json.translationData ?? "./u27n-data.json");
+		const translationDataFilename = resolve(context, json.translationData?.filename ?? "./u27n-data.json");
+		const translationDataSorted = json.translationData?.sorted ?? true;
+		if (typeof translationDataSorted !== "boolean") {
+			throw new TypeError("translationData.sorted must be a boolean.");
+		}
 
 		const namespace = json.namespace ?? "";
 		if (typeof namespace !== "string") {
@@ -136,7 +149,10 @@ export namespace Config {
 
 		return {
 			context,
-			translationData,
+			translationData: {
+				filename: translationDataFilename,
+				sorted: translationDataSorted,
+			},
 			namespace,
 			include,
 			sourceLocale: locales[0],

@@ -47,7 +47,7 @@ function configFile(overwrite?: Partial<Config.Json>): Record<string, string> {
 
 function translationData(data: Partial<TranslationData>): Record<string, string> {
 	return {
-		"u27n-data.json": TranslationData.formatJson(td.translationData(data)),
+		"u27n-data.json": TranslationData.formatJson(td.translationData(data), true),
 	};
 }
 

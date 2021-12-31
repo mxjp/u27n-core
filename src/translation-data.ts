@@ -62,7 +62,20 @@ export namespace TranslationData {
 		return JSON.parse(json) as TranslationData;
 	}
 
-	export function formatJson(data: TranslationData): string {
+	export function formatJson(data: TranslationData, sorted: boolean): string {
+		if (sorted) {
+			const fragments = Object.entries(data.fragments);
+			fragments.sort(([a], [b]) => a > b ? 1 : (a < b ? -1 : 0));
+
+			const obsolete = Array.from(data.obsolete);
+			obsolete.sort(([ai, af], [bi, bf]) => ai > bi ? 1 : (ai < bi ? -1 : Date.parse(af.modified) - Date.parse(bf.modified)));
+
+			data = {
+				version: data.version,
+				fragments: Object.fromEntries(fragments),
+				obsolete: obsolete,
+			};
+		}
 		return JSON.stringify(data, null, "\t") + "\n";
 	}
 }

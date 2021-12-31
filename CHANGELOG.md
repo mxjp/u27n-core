@@ -5,3 +5,6 @@
 
 ## 1.2
 + Add utility for updating sources.
+
+## 1.3
++ Translation data is now sorted by default.

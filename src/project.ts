@@ -33,7 +33,7 @@ export class Project {
 		return this.fileSystem.watchFiles({
 			cwd: this.config.context,
 			patterns: [
-				this.config.translationData,
+				this.config.translationData.filename,
 				...this.config.include,
 			],
 			onError: options.onError,
@@ -44,8 +44,8 @@ export class Project {
 				let translationData: TranslationData | undefined = undefined;
 
 				for (const filename of changes.updated) {
-					if (filename === this.config.translationData) {
-						const translationDataJson = await this.fileSystem.readOptionalFile(this.config.translationData);
+					if (filename === this.config.translationData.filename) {
+						const translationDataJson = await this.fileSystem.readOptionalFile(this.config.translationData.filename);
 						if (translationDataJson !== undefined) {
 							translationData = TranslationData.parseJson(translationDataJson);
 						}
@@ -64,7 +64,7 @@ export class Project {
 				}
 
 				for (const filename of changes.removed) {
-					if (filename !== this.config.translationData) {
+					if (filename !== this.config.translationData.filename) {
 						removedSources.add(Source.filenameToSourceId(this.config.context, filename));
 					}
 				}
@@ -79,7 +79,7 @@ export class Project {
 				if (options.modify) {
 					if (this.dataProcessor.translationDataModified) {
 						this.dataProcessor.translationDataModified = false;
-						await this.fileSystem.writeFile(this.config.translationData, TranslationData.formatJson(this.dataProcessor.translationData));
+						await this.fileSystem.writeFile(this.config.translationData.filename, TranslationData.formatJson(this.dataProcessor.translationData, this.config.translationData.sorted));
 					}
 					for (const [sourceId, content] of result.modifiedSources) {
 						await this.fileSystem.writeFile(Source.sourceIdToFilename(this.config.context, sourceId), content);
@@ -103,7 +103,7 @@ export class Project {
 
 	public async run(options: Project.RunOptions): Promise<Project.RunResult> {
 		let diagnostics: Diagnostic[] = [];
-		const translationDataJson = await this.fileSystem.readOptionalFile(this.config.translationData);
+		const translationDataJson = await this.fileSystem.readOptionalFile(this.config.translationData.filename);
 		const translationData = translationDataJson === undefined ? undefined : TranslationData.parseJson(translationDataJson);
 
 		const sources = new Map<string, Source>();
@@ -132,7 +132,7 @@ export class Project {
 		if (options.modify) {
 			if (this.dataProcessor.translationDataModified) {
 				this.dataProcessor.translationDataModified = false;
-				await this.fileSystem.writeFile(this.config.translationData, TranslationData.formatJson(this.dataProcessor.translationData));
+				await this.fileSystem.writeFile(this.config.translationData.filename, TranslationData.formatJson(this.dataProcessor.translationData, this.config.translationData.sorted));
 			}
 			for (const [sourceId, content] of result.modifiedSources) {
 				await this.fileSystem.writeFile(Source.sourceIdToFilename(this.config.context, sourceId), content);
