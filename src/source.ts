@@ -108,8 +108,6 @@ export declare namespace Source {
 		/**
 		 * This should be called by the update implementation for each fragment to get a project wide unique id for that fragment.
 		 *
-		 * @param currentFragmentId The id that is currently assigned to the fragment or undefined if the fragment has no id yet
-		 *
 		 * @returns The updated id to replace the current id.
 		 */
 		updateId(fragment: Fragment): string;
@@ -120,13 +118,13 @@ export declare namespace Source {
 		modified: boolean;
 		/** The update source content */
 		content: string;
-		/** A map of all fragment ids to fragments including fragments that have not been updated */
+		/** A map of all fragment ids to fragment updates (also including fragments that have not been updated) */
 		fragments: Map<string, FragmentUpdate>;
 	}
 
 	export interface FragmentUpdate {
-		/** The source value of the fragment or undefined if the current value is invalid for any reason */
-		value?: TranslationData.Value;
+		/** The source value of the fragment */
+		value: TranslationData.Value;
 		/** False if the fragment is commented out */
 		enabled: boolean;
 		/** The old id or undefined if the fragment did not have an id */
