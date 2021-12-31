@@ -697,6 +697,14 @@ test(`${DataProcessor.prototype.generateLocaleData.name}`, t => {
 						en: { value: "test", modified },
 					},
 				}),
+				5: td.fragment({
+					sourceId: "a",
+					modified,
+					enabled: false,
+					translations: {
+						en: { value: "test", modified },
+					},
+				}),
 			},
 		}),
 		updatedSources: new Map([
@@ -705,6 +713,7 @@ test(`${DataProcessor.prototype.generateLocaleData.name}`, t => {
 				bar 1
 				baz 2
 				test 3
+				# test 5
 			`)],
 		]),
 		modify: false,

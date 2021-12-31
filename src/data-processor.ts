@@ -249,17 +249,19 @@ export class DataProcessor {
 
 		this.#sources.forEach((source, sourceId) => {
 			source.fragments.forEach(fragment => {
-				const fragmentData = this.#translationDataView.getSyncFragment(sourceId, fragment);
-				// eslint-disable-next-line @typescript-eslint/prefer-optional-chain
-				if (fragmentData !== null && fragmentData.value !== null) {
-					const modified = Date.parse(fragmentData.modified);
-					for (let i = 0; i < translatedLocales.length; i++) {
-						const locale = translatedLocales[i];
-						const translation = fragmentData.translations[locale];
-						if (translation !== undefined
-							&& TranslationDataView.valueTypeEquals(fragmentData.value, translation.value)
-							&& (options.includeOutdated || Date.parse(translation.modified) >= modified)) {
-							addValue(locale, options.namespace, fragment.fragmentId!, toValue(translation.value));
+				if (fragment.enabled) {
+					const fragmentData = this.#translationDataView.getSyncFragment(sourceId, fragment);
+					// eslint-disable-next-line @typescript-eslint/prefer-optional-chain
+					if (fragmentData !== null && fragmentData.value !== null) {
+						const modified = Date.parse(fragmentData.modified);
+						for (let i = 0; i < translatedLocales.length; i++) {
+							const locale = translatedLocales[i];
+							const translation = fragmentData.translations[locale];
+							if (translation !== undefined
+								&& TranslationDataView.valueTypeEquals(fragmentData.value, translation.value)
+								&& (options.includeOutdated || Date.parse(translation.modified) >= modified)) {
+								addValue(locale, options.namespace, fragment.fragmentId!, toValue(translation.value));
+							}
 						}
 					}
 				}
