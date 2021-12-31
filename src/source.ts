@@ -4,13 +4,13 @@ import { isAbsolute, join, normalize, relative } from "path";
 import type { FragmentIdGenerator } from "./fragment-id-generator.js";
 import type { TranslationData } from "./translation-data.js";
 
-export class Source {
+export class Source<F extends Source.Fragment = Source.Fragment> {
 	public readonly content: string;
 	public readonly fragmentIdGenerator?: FragmentIdGenerator;
 
 	#lineMap: LineMap | undefined = undefined;
-	#fragments: Source.Fragment[] | undefined = undefined;
-	#fragmentMap: Map<string, Source.Fragment> | undefined = undefined;
+	#fragments: F[] | undefined = undefined;
+	#fragmentMap: Map<string, F> | undefined = undefined;
 
 	public constructor(content: string) {
 		this.content = content;
@@ -19,7 +19,7 @@ export class Source {
 	/**
 	 * Called to parse all fragments in this source.
 	 */
-	protected parse(): Source.Fragment[] {
+	protected parse(): F[] {
 		return [];
 	}
 
@@ -42,7 +42,7 @@ export class Source {
 	/**
 	 * An array of all fragments in this source.
 	 */
-	public get fragments(): Source.Fragment[] {
+	public get fragments(): F[] {
 		if (this.#fragments === undefined) {
 			this.#fragments = this.parse ? this.parse() : [];
 		}
@@ -54,9 +54,9 @@ export class Source {
 	 *
 	 * Note that this may not contain all fragments if there are any duplicate fragment ids.
 	 */
-	public get fragmentMap(): Map<string, Source.Fragment> {
+	public get fragmentMap(): Map<string, F> {
 		if (this.#fragmentMap === undefined) {
-			const map = new Map<string, Source.Fragment>();
+			const map = new Map<string, F>();
 			const fragments = this.fragments;
 			for (let i = 0; i < fragments.length; i++) {
 				const fragment = fragments[i];
