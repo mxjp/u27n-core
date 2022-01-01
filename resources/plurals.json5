@@ -1,0 +1,332 @@
+/*
+	The following data is a list of locales and their plural forms. This data is used
+	to generate code that computes the plural form index for a specific value.
+
+	A plural form can be either an array of rules where at least
+	one must match or "default" to represent the default form.
+
+	A rule can be one of the following:
+
+		Match if the value is included in "eq":
+			{ eq: number[] }
+
+		Match if the value is between "min" (inclusive) and "max" (inclusive):
+			{ min: number, max: number }
+
+		Match if the value modulo "mod" is included in "eq":
+			{ mod: number, eq: number[] }
+
+		Match if the value modulo "mod" is between "min" (inclusive) and "max" (inclusive):
+			{ mod: number, min: number, max: number }
+
+		Ignore this form if the value is included in "exclude":
+			{ exclude: number[] }
+
+*/
+
+[
+	{
+		locales: [
+			"zh",
+			"ja",
+			"ko",
+			"fa",
+			"tr",
+			"lo",
+		],
+		forms: [
+			"default",
+		],
+	},
+	{
+		locales: [
+			"da",
+			"nl",
+			"en",
+			"fo",
+			"fy",
+			"de",
+			"no",
+			"sv",
+			"et",
+			"fi",
+			"hu",
+			"eu",
+			"el",
+			"he",
+			"it",
+			"pt",
+			"es",
+			"ca",
+		],
+		forms: [
+			[
+				{ eq: [1] },
+			],
+			"default",
+		],
+	},
+	{
+		locales: [
+			"fr",
+			"pt_BR",
+			"ln",
+		],
+		forms: [
+			[
+				{ eq: [0, 1] },
+			],
+			"default"
+		],
+	},
+	{
+		locales: [
+			"lv",
+		],
+		forms: [
+			[
+				{ mod: 10, eq: [0] },
+			],
+			[
+				{ mod: 10, eq: [1] },
+				{ exclude: [11] },
+			],
+			"default",
+		],
+	},
+	{
+		locales: [
+			"gd",
+		],
+		forms: [
+			[
+				{ eq: [1, 11] },
+			],
+			[
+				{ eq: [2, 12] },
+			],
+			[
+				{ min: 3, max: 10 },
+				{ min: 13, max: 19 },
+			],
+			"default",
+		],
+	},
+	{
+		locales: [
+			"ro",
+		],
+		forms: [
+			[
+				{ eq: [1] },
+			],
+			[
+				{ eq: [0] },
+				{ mod: 100, min: 1, max: 19 },
+			],
+			"default",
+		],
+	},
+	{
+		locales: [
+			"lt",
+		],
+		forms: [
+			[
+				{ mod: 10, eq: [1] },
+				{ exclude: [11] },
+			],
+			[
+				{ mod: 10, eq: [0] },
+				{ mod: 100, min: 11, max: 19 },
+			],
+			"default",
+		],
+	},
+	{
+		locales: [
+			"be",
+			"ru",
+			"uk",
+		],
+		forms: [
+			[
+				{ mod: 10, eq: [1] },
+				{ exclude: [11] },
+			],
+			[
+				{ mod: 10, min: 2, max: 4 },
+				{ exclude: [12, 14] },
+			],
+			"default",
+		],
+	},
+	{
+		locales: [
+			"sk",
+			"cs",
+		],
+		forms: [
+			[
+				{ eq: [1] },
+			],
+			[
+				{ min: 2, max: 4 },
+			],
+			"default",
+		],
+	},
+	{
+		locales: [
+			"pl",
+		],
+		forms: [
+			[
+				{ eq: [1] },
+			],
+			[
+				{ mod: 10, min: 2, max: 4 },
+				{ exclude: [12, 14] },
+			],
+			"default",
+		],
+	},
+	{
+		locales: [
+			"sl",
+			"sb",
+		],
+		forms: [
+			[
+				{ mod: 100, eq: [1] },
+			],
+			[
+				{ mod: 100, eq: [2] },
+			],
+			[
+				{ mod: 100, eq: [3, 4] },
+			],
+			"default",
+		],
+	},
+	{
+		locales: [
+			"ar",
+		],
+		forms: [
+			[
+				{ eq: [1] },
+			],
+			[
+				{ eq: [2] },
+			],
+			[
+				{ mod: 100, min: 3, max: 10 },
+			],
+			"default",
+			[
+				{ mod: 100, min: 0, max: 2 },
+				{ exclude: [0] },
+			],
+			[
+				{ eq: [0] },
+			],
+		],
+	},
+	{
+		locales: [
+			"mt",
+		],
+		forms: [
+			[
+				{ eq: [1] },
+			],
+			[
+				{ eq: [0] },
+				{ mod: 100, min: 1, max: 10 },
+			],
+			[
+				{ mod: 100, min: 11, max: 19 },
+			],
+			"default",
+		],
+	},
+	{
+		locales: [
+			"is",
+			"mk",
+		],
+		forms: [
+			[
+				{ mod: 10, eq: [1] },
+				{ exclude: [11] },
+			],
+			"default",
+		],
+	},
+	{
+		locales: [
+			"br",
+		],
+		forms: [
+			[
+				{ mod: 10, eq: [1] },
+				{ exclude: [11, 71, 91] },
+			],
+			[
+				{ mod: 10, eq: [2] },
+				{ exclude: [12, 72, 92] },
+			],
+			[
+				{ mod: 10, eq: [3, 4, 9] },
+				{ exclude: [13, 14, 19, 73, 74, 79, 93, 94, 99] },
+			],
+			[
+				{ mod: 1000000, eq: [0] },
+				{ exclude: [0] },
+			],
+			"default",
+		],
+	},
+	{
+		locales: [
+			"cy",
+		],
+		forms: [
+			[
+				{ eq: [0] },
+			],
+			[
+				{ eq: [1] },
+			],
+			[
+				{ eq: [2] },
+			],
+			[
+				{ eq: [3] },
+			],
+			[
+				{ eq: [6] },
+			],
+			"default",
+		],
+	},
+	{
+		locales: [
+			"bs",
+			"hr",
+			"sr",
+		],
+		forms: [
+			[
+				{ mod: 10, eq: [1] },
+				{ exclude: [11] },
+			],
+			[
+				{ mod: 10, min: 2, max: 4 },
+				{ exclude: [12, 14] },
+			],
+			"default",
+		],
+	},
+]

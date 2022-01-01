@@ -12,12 +12,14 @@
 		"u27n": "./dist/cjs/cli.js"
 	},
 	"scripts": {
-		"clean": "rimraf ./dist/**/* ./test_out/**/* ./test_data/**/*",
-		"build": "concurrently npm:build:*",
-		"build:es": "npm run clean && tsc -p tsconfig-es.json",
-		"build:cjs": "npm run clean && tsc -p tsconfig-cjs.json",
-		"test": "npm run clean && tsc -p tsconfig-test.json && ava -v",
-		"start": "npm run clean && tsc -p tsconfig-test.json && concurrently \"tsc -p tsconfig-test.json -w\" \"ava -v -w\"",
+		"clean": "rimraf ./dist/**/* ./test_out/**/* ./test_data/**/* ./src/generated/**/*",
+		"generate": "concurrently npm:generate:*",
+		"generate:plurals": "ts-node --project tsconfig-generators.json ./generators/plurals.ts",
+		"build": "npm run clean && npm run generate && concurrently npm:build:*",
+		"build:es": "tsc -p tsconfig-es.json",
+		"build:cjs": "tsc -p tsconfig-cjs.json",
+		"test": "npm run clean && npm run generate && tsc -p tsconfig-test.json && ava -v",
+		"start": "npm run clean && npm run generate && tsc -p tsconfig-test.json && concurrently \"tsc -p tsconfig-test.json -w\" \"ava -v -w\"",
 		"lint": "eslint --config .eslintrc.json ./src/**/* ./test/**/*",
 		"prepack": "npm run lint && npm test && npm run build"
 	},
@@ -29,15 +31,17 @@
 		"@types/yargs-parser": "^20.2.1",
 		"ava": "^3.15.0",
 		"concurrently": "^6.3.0",
+		"json5": "^2.2.0",
 		"rimraf": "^3.0.2",
+		"ts-node": "^10.4.0",
 		"typescript": "^4.4.4"
 	},
 	"dependencies": {
 		"@mpt/line-map": "^1.0.0",
 		"ansi-colors": "^4.1.1",
+		"chokidar": "^3.5.2",
 		"picomatch": "^2.3.0",
 		"resolve": "^1.20.0",
-		"yargs-parser": "^21.0.0",
-		"chokidar": "^3.5.2"
+		"yargs-parser": "^21.0.0"
 	}
 }

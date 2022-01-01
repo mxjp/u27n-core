@@ -9,6 +9,8 @@
 	},
 	"include": [
 		"./src",
-		"./test"
+		"./test",
+		"./generators",
+		"./resources"
 	]
 }
