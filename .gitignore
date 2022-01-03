@@ -1,5 +1,5 @@
 /node_modules
-/src/generated
+/src/runtime/generated
 /dist
 /test_out
 /test_data

@@ -1,6 +1,6 @@
 import { Diagnostic } from "./diagnostics.js";
 import { Base62FragmentIdGenerator, FragmentIdGenerator } from "./fragment-id-generator.js";
-import { LocaleData } from "./locale-data.js";
+import { LocaleData } from "./runtime/locale-data.js";
 import type { Source } from "./source.js";
 import type { TranslationData } from "./translation-data.js";
 import { SourceFragmentMap } from "./utility/source-fragment-map.js";

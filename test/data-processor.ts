@@ -1,7 +1,7 @@
 import test from "ava";
 
 import { DataProcessor } from "../src/data-processor.js";
-import { LocaleData } from "../src/locale-data.js";
+import { LocaleData } from "../src/runtime/locale-data.js";
 import { TestSource } from "./_utility/test-source.js";
 import { TranslationDataUtility as td } from "./_utility/translation-data.js";
 import { unindent } from "./_utility/unindent.js";

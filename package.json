@@ -1,6 +1,6 @@
 {
 	"name": "@u27n/core",
-	"version": "1.3.0",
+	"version": "1.4.0",
 	"description": "Universal localization framework",
 	"author": "Max J. Polster",
 	"license": "MIT",
@@ -8,11 +8,24 @@
 	"homepage": "https://github.com/mxjp/u27n-core",
 	"main": "./dist/cjs/index.js",
 	"module": "./dist/es/index.js",
+	"exports": {
+		".": {
+			"module": "./dist/es/index.js",
+			"import": "./dist/es/index.js",
+			"default": "./dist/cjs/index.js"
+		},
+		"./runtime": {
+			"module": "./dist/es/runtime/index.js",
+			"import": "./dist/es/runtime/index.js",
+			"default": "./dist/cjs/runtime/index.js"
+		},
+		"./resources/": "./resources/"
+	},
 	"bin": {
 		"u27n": "./dist/cjs/cli.js"
 	},
 	"scripts": {
-		"clean": "rimraf ./dist/**/* ./test_out/**/* ./test_data/**/* ./src/generated/**/*",
+		"clean": "rimraf ./dist/**/* ./test_out/**/* ./test_data/**/* ./src/runtime/generated/**/*",
 		"generate": "concurrently npm:generate:*",
 		"generate:plurals": "ts-node --project tsconfig-generators.json ./generators/plurals.ts",
 		"build": "npm run clean && npm run generate && concurrently npm:build:*",

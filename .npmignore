@@ -1,4 +1,5 @@
 /.github
+/generators
 /node_modules
 /test
 /test_out

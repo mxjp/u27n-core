@@ -8,3 +8,6 @@
 
 ## 1.3
 + Translation data is now sorted by default.
+
+## 1.4
++ Experimental runtime api.

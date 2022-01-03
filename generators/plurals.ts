@@ -11,7 +11,7 @@ const moduleTemplate = (
 	code: string[],
 ) => `/* eslint-disable camelcase */
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import type { PluralProcessor } from "../plurals.js";
+import type { PluralProcessor } from "../pluralization.js";
 
 const p: PluralProcessor = (value: string[], count: number) => {
 ${code.map(line => `\t${line}`).join("\n")}
@@ -28,12 +28,28 @@ const moduleIndexTemplate = (
 	const resourceFilename = join(__dirname, "../resources/plurals.json5");
 
 	const localeSets = JSON5.parse(await readFile(resourceFilename, "utf-8")) as LocaleSet[];
+	const locales = new Set<string>();
 
-	const outputDir = join(__dirname, "../src/generated");
+	const outputDir = join(__dirname, "../src/runtime/generated");
 	await mkdir(outputDir, { recursive: true });
 
 	for (let i = 0; i < localeSets.length; i++) {
 		const localeSet = localeSets[i];
+
+		for (const locale of localeSet.locales) {
+			if (typeof locale !== "string" || !/^[a-z_]+$/i.test(locale)) {
+				throw new TypeError(`invalid locale: ${JSON.stringify(locale)}`);
+			}
+			if (locales.has(locale)) {
+				throw new TypeError(`duplicate locale: ${JSON.stringify(locale)}`);
+			}
+			locales.add(locale);
+		}
+
+		if (!localeSet.locales.every(locale => typeof locale === "string" && /^[a-z_]+$/i.test(locale))) {
+			throw new TypeError(`invalid locales: ${localeSet.locales.join(",")}`);
+		}
+
 		const localeSetName = `locales ${localeSet.locales.join(",")}`;
 
 		const defaultForm = localeSet.forms.indexOf("default");

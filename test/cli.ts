@@ -4,7 +4,7 @@ import { join, resolve } from "path";
 
 import { Config } from "../src/config.js";
 import { Diagnostic, getDiagnosticMessage } from "../src/diagnostics.js";
-import { LocaleData } from "../src/locale-data.js";
+import { LocaleData } from "../src/runtime/index.js";
 import { TranslationData } from "../src/translation-data.js";
 import { exec, execStart } from "./_utility/exec.js";
 import { jsonFile } from "./_utility/json-file.js";
