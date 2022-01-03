@@ -34,7 +34,7 @@
 		"test": "npm run clean && npm run generate && tsc -p tsconfig-test.json && ava -v",
 		"start": "npm run clean && npm run generate && tsc -p tsconfig-test.json && concurrently \"tsc -p tsconfig-test.json -w\" \"ava -v -w\"",
 		"lint": "eslint --config .eslintrc.json ./src/**/* ./test/**/*",
-		"prepack": "npm run lint && npm test && npm run build"
+		"prepack": "npm test && npm run build && npm run lint"
 	},
 	"devDependencies": {
 		"@mpt/eslint-rules": "^2.0.0",
