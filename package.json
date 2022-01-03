@@ -33,7 +33,7 @@
 		"build:cjs": "tsc -p tsconfig-cjs.json",
 		"test": "npm run clean && npm run generate && tsc -p tsconfig-test.json && ava -v",
 		"start": "npm run clean && npm run generate && tsc -p tsconfig-test.json && concurrently \"tsc -p tsconfig-test.json -w\" \"ava -v -w\"",
-		"lint": "eslint --config .eslintrc.json ./src/**/* ./test/**/*",
+		"lint": "eslint --no-error-on-unmatched-pattern --config .eslintrc.json ./src/**/* ./test/**/*",
 		"prepack": "npm test && npm run build && npm run lint"
 	},
 	"devDependencies": {
