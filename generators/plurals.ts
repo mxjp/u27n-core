@@ -9,9 +9,7 @@ import { Conditions } from "./utility/conditions";
 const moduleTemplate = (
 	locales: string[],
 	code: string[],
-) => `/* eslint-disable camelcase */
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import type { PluralProcessor } from "../pluralization.js";
+) => `import type { PluralProcessor } from "../pluralization.js";
 
 const p: PluralProcessor = (value: string[], count: number) => {
 ${code.map(line => `\t${line}`).join("\n")}

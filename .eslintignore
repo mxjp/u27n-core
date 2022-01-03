@@ -2,6 +2,7 @@
 /dist
 /test_out
 /runtime.d.ts
+/src/runtime/generated
 *.cjs
 *.mjs
 *.html
