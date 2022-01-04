@@ -1,5 +1,7 @@
+export * from "./context.js";
 export * from "./controller.js";
 export * from "./default-locale-factory.js";
+export * from "./fetch-client.js";
 export * from "./generated/plurals.js";
 export * from "./interpolation.js";
 export * from "./locale.js";

@@ -1,11 +1,13 @@
 import { U27N } from "./controller.js";
 import { Locale } from "./locale.js";
 
-export interface Formatter<T = unknown> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export interface Formatter<T = any> {
 	(value: T, locale: Locale, format?: string): string;
 }
 
-export type Formatters = Map<unknown, Formatter>;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type Formatters = Map<any, Formatter>;
 
 export interface InterpolationProcessor {
 	(value: string, fields: InterpolationFields, locale: Locale, formatters?: Formatters): string;
@@ -16,16 +18,22 @@ export type InterpolationFields = Record<string, unknown>;
 export function createInterpolationProcessor(controller: U27N): InterpolationProcessor {
 	const hasOwnProperty = Object.prototype.hasOwnProperty;
 	return (value, fields, locale, formatters) => {
-		return value.replace(/\\([^])|\{([^}])\}/g, (match, escaped: string, content: string) => {
+		return value.replace(/\\([^])|\{((?:\\[^]|[^\\}])*)\}/g, (match, escaped: string, content: string) => {
 			if (escaped !== undefined) {
 				return escaped;
 			}
-			const parts = content.split(",");
+
+			const parts = content.split(/(?<!\\),\s*/g);
 			if (parts.length < 1 || parts.length > 3) {
 				throw new TypeError(`invalid interpolation: ${JSON.stringify(match)}`);
 			}
 
-			const [name, formatterKey, format] = parts;
+			const [name, formatterKey] = parts;
+			let format = parts[2];
+			if (format !== undefined) {
+				format = format.replace(/\\([^])/g, "$1");
+			}
+
 			const value = hasOwnProperty.call(fields, name) ? fields[name] : undefined;
 
 			if (formatterKey !== undefined) {
@@ -44,7 +52,7 @@ export function createInterpolationProcessor(controller: U27N): InterpolationPro
 			if (type === "object" && value !== null) {
 				let proto = Object.getPrototypeOf(value) as unknown;
 				while (proto !== null) {
-					const formatter = formatters?.get(formatterKey) ?? controller.formatters.get(proto);
+					const formatter = formatters?.get(proto) ?? controller.formatters.get(proto);
 					if (formatter !== undefined) {
 						return formatter(value, locale);
 					}
@@ -52,7 +60,7 @@ export function createInterpolationProcessor(controller: U27N): InterpolationPro
 				}
 			}
 
-			const formatter = formatters?.get(formatterKey) ?? controller.formatters.get(type);
+			const formatter = formatters?.get(type) ?? controller.formatters.get(type);
 			if (formatter === undefined) {
 				return String(value);
 			}

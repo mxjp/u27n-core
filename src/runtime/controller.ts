@@ -17,7 +17,7 @@ export class U27N {
 		this.#locales = new Map();
 
 		this.clients = new Set(options.clients);
-		this.formatters = new Map(options.formatters);
+		this.formatters = new Map(options.formatters!);
 		this.updateHandlers = new Set();
 	}
 
@@ -25,8 +25,8 @@ export class U27N {
 		return this.#locale;
 	}
 
-	public async setLocale(code: string, update = false): Promise<void> {
-		let locale = update ? undefined : this.#locales.get(code);
+	public async setLocale(code: string, refresh = false): Promise<void> {
+		let locale = refresh ? undefined : this.#locales.get(code);
 		if (locale === undefined) {
 			locale = this.#localeFactory(this, code);
 			this.#locales.set(code, locale);
@@ -38,6 +38,7 @@ export class U27N {
 			await Promise.all(tasks);
 
 			this.#locale = locale;
+			this.update();
 		}
 	}
 
@@ -85,7 +86,7 @@ export declare namespace U27N {
 	export interface Options {
 		clients?: Client[];
 		localeFactory: LocaleFactory;
-		formatters: Formatters;
+		formatters?: Formatters;
 	}
 
 	export interface UpdateHandler {
