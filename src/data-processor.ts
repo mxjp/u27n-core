@@ -172,12 +172,17 @@ export class DataProcessor {
 			const missingLocales = new Set(options.translatedLocales);
 			const unknownLocales: string[] = [];
 			const outdatedLocales: string[] = [];
+			const typeMismatchLocales: string[] = [];
 			for (const locale in fragment.translations) {
+				const translation = fragment.translations[locale];
 				if (!missingLocales.delete(locale)) {
 					unknownLocales.push(locale);
 				}
-				if (Date.parse(fragment.translations[locale].modified) < sourceModified) {
+				if (Date.parse(translation.modified) < sourceModified) {
 					outdatedLocales.push(locale);
+				}
+				if (!TranslationDataView.valueTypeEquals(fragment.value, translation.value)) {
+					typeMismatchLocales.push(locale);
 				}
 			}
 			if (missingLocales.size > 0) {
@@ -202,6 +207,14 @@ export class DataProcessor {
 					sourceId: fragment.sourceId,
 					fragmentId,
 					locales: outdatedLocales,
+				});
+			}
+			if (typeMismatchLocales.length > 0) {
+				diagnostics.push({
+					type: "valueTypeMismatch",
+					sourceId: fragment.sourceId,
+					fragmentId,
+					locales: typeMismatchLocales,
 				});
 			}
 		});

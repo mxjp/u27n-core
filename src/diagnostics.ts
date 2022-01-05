@@ -2,17 +2,7 @@ import { DataProcessor } from "./data-processor.js";
 import { Source } from "./source.js";
 
 export type Diagnostic = {
-	type: "missingTranslations";
-	sourceId: string;
-	fragmentId: string;
-	locales: string[];
-} | {
-	type: "outdatedTranslations";
-	sourceId: string;
-	fragmentId: string;
-	locales: string[];
-} | {
-	type: "unknownTranslations";
+	type: "missingTranslations" | "outdatedTranslations" | "unknownTranslations" | "valueTypeMismatch";
 	sourceId: string;
 	fragmentId: string;
 	locales: string[];
@@ -73,7 +63,8 @@ export function getDiagnosticLocations(rootDir: string, dataProcessor: DataProce
 	switch (diagnostic.type) {
 		case "missingTranslations":
 		case "outdatedTranslations":
-		case "unknownTranslations": {
+		case "unknownTranslations":
+		case "valueTypeMismatch": {
 			const source = dataProcessor.getSource(diagnostic.sourceId);
 			const filename = Source.sourceIdToFilename(rootDir, diagnostic.sourceId);
 			if (source === undefined) {
@@ -162,6 +153,9 @@ export function getDiagnosticMessage(diagnostic: Diagnostic): string {
 
 		case "unknownTranslations":
 			return `Fragment ${string(diagnostic.fragmentId)} has translations for unknown locale(s) ${list(diagnostic.locales)}.`;
+
+		case "valueTypeMismatch":
+			return `Fragment ${string(diagnostic.fragmentId)} has a translation with a wrong value type for locale(s) ${list(diagnostic.locales)}.`;
 
 		case "duplicateFragment":
 			return `Duplicate fragment id ${string(diagnostic.fragmentId)}.`;
