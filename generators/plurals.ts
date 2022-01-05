@@ -1,12 +1,13 @@
 /* eslint-disable import/extensions */
 import { mkdir, readFile, writeFile } from "fs/promises";
+import jsStringEscape from "js-string-escape";
 import JSON5 from "json5";
 import { join } from "path";
 
 import type { LocaleSet, PluralFormEqualsRule, PluralFormExcludeRule, PluralFormRangeRule, PluralFormRule } from "../resources/plurals";
 import { Conditions } from "./utility/conditions";
 
-const moduleTemplate = (
+const processorModuleTemplate = (
 	locales: string[],
 	code: string[],
 ) => `import type { PluralProcessor } from "../pluralization.js";
@@ -20,7 +21,17 @@ ${locales.map(locale => `export const plurals_${locale} = p;`).join("\n")}
 
 const moduleIndexTemplate = (
 	sets: LocaleSet[]
-) => `${sets.map((_, i) => `export * from "./plurals-${i}.js";\n`).join("")}`;
+) => `${sets.map((_, i) => `export * from "./plurals-${i}.js";`).join("\n")}
+`;
+
+const infoModuleTemplate = (
+	sets: LocaleSet[],
+) => `import type { PluralInfo } from "../plural-info.js";
+
+export const pluralInfo = new Map<string, PluralInfo>([
+${sets.map(set => set.locales.map(locale => `\t["${jsStringEscape(locale)}", { formCount: ${set.forms.length} }],`).join("\n")).join("\n")}
+]);
+`;
 
 (async () => {
 	const resourceFilename = join(__dirname, "../resources/plurals.json5");
@@ -28,7 +39,10 @@ const moduleIndexTemplate = (
 	const localeSets = JSON5.parse(await readFile(resourceFilename, "utf-8")) as LocaleSet[];
 	const locales = new Set<string>();
 
-	const outputDir = join(__dirname, "../src/runtime/generated");
+	const runtimeOutputDir = join(__dirname, "../src/runtime/generated");
+	await mkdir(runtimeOutputDir, { recursive: true });
+
+	const outputDir = join(__dirname, "../src/generated");
 	await mkdir(outputDir, { recursive: true });
 
 	for (let i = 0; i < localeSets.length; i++) {
@@ -111,10 +125,11 @@ const moduleIndexTemplate = (
 
 		code.push(`return value[${defaultForm}];`);
 
-		await writeFile(join(outputDir, `plurals-${i}.ts`), moduleTemplate(localeSet.locales, code));
+		await writeFile(join(runtimeOutputDir, `plurals-${i}.ts`), processorModuleTemplate(localeSet.locales, code));
 	}
 
-	await writeFile(join(outputDir, `plurals.ts`), moduleIndexTemplate(localeSets));
+	await writeFile(join(runtimeOutputDir, "plurals.ts"), moduleIndexTemplate(localeSets));
+	await writeFile(join(outputDir, "plural-info.ts"), infoModuleTemplate(localeSets));
 })().catch(error => {
 	console.error(error);
 });

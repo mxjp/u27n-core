@@ -3,6 +3,7 @@
 /test_out
 /runtime.d.ts
 /src/runtime/generated
+/src/generated
 *.cjs
 *.mjs
 *.html

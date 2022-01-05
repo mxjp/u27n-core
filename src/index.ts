@@ -3,6 +3,7 @@ export * from "./data-processor.js";
 export * from "./diagnostics.js";
 export * from "./fragment-id-generator.js";
 export * from "./plugin.js";
+export * from "./plural-info.js";
 export * from "./project.js";
 export * from "./source.js";
 export * from "./source-updates.js";
