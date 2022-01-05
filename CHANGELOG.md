@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.6
++ Add diagnostics: `valueTypeMismatch`, `pluralFormCountMismatch`, `unsupportedLocales`
++ Add plural info module.
+
 ## 1.5
 + Add runtime translation context.
 
