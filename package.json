@@ -25,7 +25,7 @@
 		"u27n": "./dist/cjs/cli.js"
 	},
 	"scripts": {
-		"clean": "rimraf ./dist/**/* ./test_out/**/* ./test_data/**/* ./src/runtime/generated/**/*",
+		"clean": "rimraf ./dist/**/* ./test_out/**/* ./test_data/**/* ./src/runtime/generated/**/* ./src/generated/**/*",
 		"generate": "concurrently npm:generate:*",
 		"generate:plurals": "ts-node --project tsconfig-generators.json ./generators/plurals.ts",
 		"build": "npm run clean && npm run generate && concurrently npm:build:*",
