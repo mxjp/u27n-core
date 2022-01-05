@@ -36,6 +36,7 @@ export class Project {
 				this.config.translationData.filename,
 				...this.config.include,
 			],
+			delay: options.delay,
 			onError: options.onError,
 			onChange: async changes => {
 				let diagnostics: Diagnostic[] = [];
@@ -210,6 +211,7 @@ export declare namespace Project {
 	}
 
 	export interface WatchOptions {
+		delay: number;
 		output: boolean;
 		modify: boolean;
 		fragmentDiagnostics: boolean;

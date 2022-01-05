@@ -11,6 +11,7 @@ export declare namespace FileSystem {
 	export interface WatchFileOptions {
 		cwd: string;
 		patterns: string[];
+		delay: number;
 		onChange: (changes: WatchFileOptions.Changes) => Promise<void>;
 		onError?: (error: unknown) => void;
 	}

@@ -13,6 +13,7 @@ interface Args extends parseArgv.Arguments {
 	watch?: boolean;
 	output?: boolean;
 	modify?: boolean;
+	delay?: number;
 }
 
 const diagnosticColors = new Map<DiagnosticSeverity, colors.StyleFunction>([
@@ -29,6 +30,11 @@ const diagnosticColors = new Map<DiagnosticSeverity, colors.StyleFunction>([
 	const watch = args.watch ?? false;
 	const output = args.output ?? true;
 	const modify = args.modify ?? watch;
+
+	const delay = args.delay ?? 100;
+	if (typeof delay !== "number" || !Number.isInteger(delay) || delay < 0 || delay > 10000) {
+		throw new TypeError("--delay must be a number from 0 to 10000.");
+	}
 
 	const configFilename = resolve(args.config ?? "u27n.json");
 	const config = await Config.read(configFilename);
@@ -79,6 +85,7 @@ const diagnosticColors = new Map<DiagnosticSeverity, colors.StyleFunction>([
 
 	if (watch) {
 		project.watch({
+			delay,
 			output,
 			modify,
 			fragmentDiagnostics: true,

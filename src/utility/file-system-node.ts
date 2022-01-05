@@ -2,6 +2,7 @@ import chokidar from "chokidar";
 import { mkdir, readdir, readFile, writeFile } from "fs/promises";
 import { dirname, join, relative, sep } from "path";
 import createMatcher, { Matcher, scan } from "picomatch";
+import { clearTimeout, setTimeout } from "timers";
 
 import { FileSystem } from "./file-system.js";
 
@@ -39,26 +40,32 @@ export class NodeFileSystem implements FileSystem {
 		const updated = new Set<string>();
 		const deleted = new Set<string>();
 
+		let handleChangesTimer: NodeJS.Timer | null = null;
 		function handleChanges() {
-			if (ready && !handling) {
-				handling = true;
-				void (async () => {
-					while (updated.size > 0 || deleted.size > 0) {
-						try {
-							const changes: FileSystem.WatchFileOptions.Changes = {
-								updated: Array.from(updated),
-								removed: Array.from(deleted),
-							};
-							updated.clear();
-							deleted.clear();
-							await options.onChange(changes);
-						} catch (error) {
-							options.onError?.(error);
-						}
-					}
-					handling = false;
-				})();
+			if (handleChangesTimer !== null) {
+				clearTimeout(handleChangesTimer);
 			}
+			handleChangesTimer = setTimeout(() => {
+				if (ready && !handling) {
+					handling = true;
+					void (async () => {
+						while (updated.size > 0 || deleted.size > 0) {
+							try {
+								const changes: FileSystem.WatchFileOptions.Changes = {
+									updated: Array.from(updated),
+									removed: Array.from(deleted),
+								};
+								updated.clear();
+								deleted.clear();
+								await options.onChange(changes);
+							} catch (error) {
+								options.onError?.(error);
+							}
+						}
+						handling = false;
+					})();
+				}
+			}, options.delay);
 		}
 
 		watcher.on("add", filename => {
@@ -91,7 +98,12 @@ export class NodeFileSystem implements FileSystem {
 			options.onError?.(error);
 		});
 
-		return () => watcher.close();
+		return async () => {
+			await watcher.close();
+			if (handleChangesTimer !== null) {
+				clearTimeout(handleChangesTimer);
+			}
+		};
 	}
 
 	public async findFiles(options: FileSystem.FindFileOptions): Promise<string[]> {
