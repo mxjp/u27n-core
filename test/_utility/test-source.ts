@@ -1,17 +1,42 @@
 import { Source } from "../../src/source.js";
+import { TranslationData } from "../../src/translation-data.js";
 import { unindent } from "./unindent.js";
 
-const FRAGMENT_REGEXP = /(\s*)(\S+)(?: (\S+))?(\n|$)/y;
+const FRAGMENT_REGEXP = /(\s*)((?:[^=\n])+)(?: id=([^\n]+))?(\n|$)/y;
+
+function parseValue(value: string): TranslationData.Value {
+	const plural = /^plural:\s([^]+)$/.exec(value);
+	if (plural) {
+		return {
+			type: "plural",
+			value: plural[1].split(/\s+/),
+		};
+	}
+	return value;
+}
+
+function formatValue(value: TranslationData.Value): string {
+	if (value === null) {
+		throw new TypeError("invalid value to format");
+	}
+	if (typeof value === "string") {
+		return value;
+	}
+	switch (value.type) {
+		case "plural": return `plural: ${value.value.join(", ")}`;
+	}
+}
 
 /**
  * A managed source where each line represents
- * a fragment in the form `<value> [<id>]`.
+ * a fragment in the form `<value> [id=<id>]`.
  *
  * Example:
  * ```txt
  * foo
- * bar 42
- * baz 7w
+ * bar id=42
+ * baz id=7w
+ * plural: foo bar id=7
  * ```
  */
 export class TestSource extends Source {
@@ -32,7 +57,7 @@ export class TestSource extends Source {
 			const [raw, ls, value, id, ts] = match;
 			fragments.push({
 				fragmentId: id,
-				value: value,
+				value: parseValue(value),
 				enabled: true,
 				start: match.index + ls.length,
 				end: match.index + raw.length - ts.length,
@@ -64,7 +89,7 @@ export class TestSource extends Source {
 		let offset = this.content.length;
 		for (let i = updates.length - 1; i >= 0; i--) {
 			const [update, uniqueId] = updates[i];
-			content = `${update.value!} ${uniqueId}${this.content.slice(update.end, offset)}${content}`;
+			content = `${formatValue(update.value)} id=${uniqueId}${this.content.slice(update.end, offset)}${content}`;
 			offset = update.start;
 		}
 		if (offset > 0) {

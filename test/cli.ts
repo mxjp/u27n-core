@@ -101,7 +101,7 @@ test("sync project", async t => {
 		}),
 		src: {
 			"foo.txt": unindent(`
-				foo 0
+				foo id=0
 			`),
 			"something-else.json": unindent(`{}`),
 		},
@@ -123,7 +123,7 @@ test("out of sync project", async t => {
 		...translationData({}),
 		src: {
 			"foo.txt": unindent(`
-				foo 0
+				foo id=0
 			`),
 			"something-else.json": unindent(`{}`),
 		},
@@ -157,7 +157,7 @@ test("watch project", async t => {
 	const cli = await execStart(t, cwd, ...cliArgs(...cliConfig, "--watch"));
 	try {
 		await writeFile(join(cwd, "src/test.txt"), unindent(`
-			foo 0
+			foo id=0
 		`));
 		await wait(async () => {
 			const data = await readTranslationData(cwd);
@@ -166,7 +166,7 @@ test("watch project", async t => {
 			}
 		})!;
 		await writeFile(join(cwd, "src/test2.txt"), unindent(`
-			bar 0
+			bar id=0
 		`));
 		await wait(async () => {
 			const data = await readTranslationData(cwd);

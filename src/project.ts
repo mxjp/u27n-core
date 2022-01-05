@@ -88,6 +88,7 @@ export class Project {
 
 				if (options.fragmentDiagnostics) {
 					diagnostics = diagnostics.concat(this.dataProcessor.getFragmentDiagnostics({
+						sourceLocale: this.config.sourceLocale,
 						translatedLocales: this.config.translatedLocales,
 					}));
 				}
@@ -145,6 +146,7 @@ export class Project {
 
 		if (options.fragmentDiagnostics) {
 			diagnostics = diagnostics.concat(this.dataProcessor.getFragmentDiagnostics({
+				sourceLocale: this.config.sourceLocale,
 				translatedLocales: this.config.translatedLocales,
 			}));
 		}

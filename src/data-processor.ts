@@ -1,5 +1,6 @@
 import { Diagnostic } from "./diagnostics.js";
 import { Base62FragmentIdGenerator, FragmentIdGenerator } from "./fragment-id-generator.js";
+import { getPluralInfo } from "./plural-info.js";
 import { LocaleData } from "./runtime/locale-data.js";
 import type { Source } from "./source.js";
 import type { TranslationData } from "./translation-data.js";
@@ -165,6 +166,10 @@ export class DataProcessor {
 
 	public getFragmentDiagnostics(options: DataProcessor.DiagnosticOptions): Diagnostic[] {
 		const diagnostics: Diagnostic[] = [];
+		const allLocales = new Set<string>(options.translatedLocales);
+		allLocales.add(options.sourceLocale);
+
+		const sourcePluralInfo = getPluralInfo(options.sourceLocale);
 
 		this.#translationDataView.forEachFragment((fragmentId, fragment) => {
 			const sourceModified = Date.parse(fragment.modified);
@@ -173,7 +178,24 @@ export class DataProcessor {
 			const unknownLocales: string[] = [];
 			const outdatedLocales: string[] = [];
 			const typeMismatchLocales: string[] = [];
+
+			if (sourcePluralInfo !== undefined && TranslationDataView.isPluralValue(fragment.value)) {
+				const actualFormCount = fragment.value.value.length;
+				if (actualFormCount !== sourcePluralInfo.formCount) {
+					diagnostics.push({
+						type: "pluralFormCountMismatch",
+						sourceId: fragment.sourceId,
+						fragmentId,
+						locale: options.sourceLocale,
+						actualFormCount,
+						expectedFormCount: sourcePluralInfo.formCount,
+					});
+				}
+			}
+
 			for (const locale in fragment.translations) {
+				allLocales.add(locale);
+
 				const translation = fragment.translations[locale];
 				if (!missingLocales.delete(locale)) {
 					unknownLocales.push(locale);
@@ -184,13 +206,29 @@ export class DataProcessor {
 				if (!TranslationDataView.valueTypeEquals(fragment.value, translation.value)) {
 					typeMismatchLocales.push(locale);
 				}
+
+				if (TranslationDataView.isPluralValue(translation.value)) {
+					const pluralInfo = getPluralInfo(locale);
+					const actualFormCount = translation.value.value.length;
+					if (pluralInfo !== undefined && actualFormCount !== pluralInfo.formCount) {
+						diagnostics.push({
+							type: "pluralFormCountMismatch",
+							sourceId: fragment.sourceId,
+							fragmentId,
+							locale,
+							actualFormCount,
+							expectedFormCount: pluralInfo.formCount,
+						});
+					}
+				}
 			}
+
 			if (missingLocales.size > 0) {
 				diagnostics.push({
 					type: "missingTranslations",
 					sourceId: fragment.sourceId,
 					fragmentId,
-					locales: Array.from(missingLocales),
+					locales: Array.from(missingLocales).sort(),
 				});
 			}
 			if (unknownLocales.length > 0) {
@@ -198,7 +236,7 @@ export class DataProcessor {
 					type: "unknownTranslations",
 					sourceId: fragment.sourceId,
 					fragmentId,
-					locales: unknownLocales,
+					locales: unknownLocales.sort(),
 				});
 			}
 			if (outdatedLocales.length > 0) {
@@ -206,7 +244,7 @@ export class DataProcessor {
 					type: "outdatedTranslations",
 					sourceId: fragment.sourceId,
 					fragmentId,
-					locales: outdatedLocales,
+					locales: outdatedLocales.sort(),
 				});
 			}
 			if (typeMismatchLocales.length > 0) {
@@ -214,7 +252,7 @@ export class DataProcessor {
 					type: "valueTypeMismatch",
 					sourceId: fragment.sourceId,
 					fragmentId,
-					locales: typeMismatchLocales,
+					locales: typeMismatchLocales.sort(),
 				});
 			}
 		});
@@ -228,6 +266,14 @@ export class DataProcessor {
 				});
 			}
 		});
+
+		const unsupportedLocales = Array.from(allLocales).filter(locale => getPluralInfo(locale) === undefined);
+		if (unsupportedLocales.length > 0) {
+			diagnostics.push({
+				type: "unsupportedLocales",
+				locales: unsupportedLocales.sort(),
+			});
+		}
 
 		return diagnostics;
 	}
@@ -313,6 +359,7 @@ export declare namespace DataProcessor {
 	}
 
 	export interface DiagnosticOptions {
+		sourceLocale: string;
 		translatedLocales: string[];
 	}
 

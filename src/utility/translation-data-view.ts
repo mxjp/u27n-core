@@ -212,6 +212,13 @@ export class TranslationDataView {
 			? false
 			: a.type === b.type;
 	}
+
+	/**
+	 * Check if the translation data value is a plural value.
+	 */
+	public static isPluralValue(value: TranslationData.Value): value is TranslationData.PluralValue {
+		return value !== null && typeof value === "object" && value.type === "plural";
+	}
 }
 
 export declare namespace TranslationDataView {

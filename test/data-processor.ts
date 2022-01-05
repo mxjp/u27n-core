@@ -18,11 +18,11 @@ test(`${DataProcessor.prototype.applyUpdate.name} (state in sync)`, t => {
 	const result = processor.applyUpdate({
 		updatedSources: new Map([
 			["a", new TestSource(`
-				foo 0
-				bar 1
+				foo id=0
+				bar id=1
 			`)],
 			["b", new TestSource(`
-				baz 2
+				baz id=2
 			`)],
 		]),
 		translationData: td.translationData({
@@ -41,11 +41,11 @@ for (const [name, ...updates] of ([
 	["missing id", {
 		updatedSources: new Map([
 			["a", new TestSource(`
-				foo 42
+				foo id=42
 				bar
 			`)],
 			["b", new TestSource(`
-				baz 0
+				baz id=0
 			`)],
 		]),
 		translationData: td.translationData({
@@ -57,15 +57,15 @@ for (const [name, ...updates] of ([
 	["duplicate id, no data", {
 		updatedSources: new Map([
 			["a", new TestSource(`
-				foo 0
-				bar 0
+				foo id=0
+				bar id=0
 			`)],
 		]),
 	}],
 	["removed source", {
 		updatedSources: new Map([
 			["a", new TestSource(`
-				foo 0
+				foo id=0
 			`)],
 		]),
 	}, {
@@ -81,7 +81,7 @@ for (const [name, ...updates] of ([
 	["data update, add source", {
 		updatedSources: new Map([
 			["a", new TestSource(`
-				foo 0
+				foo id=0
 			`)],
 		]),
 	}, {
@@ -94,7 +94,7 @@ for (const [name, ...updates] of ([
 		}),
 		updatedSources: new Map([
 			["b", new TestSource(`
-				bar 1
+				bar id=1
 			`)],
 		]),
 	}],
@@ -118,11 +118,11 @@ test(`${DataProcessor.prototype.applyUpdate.name} (missing id)`, async t => {
 	const result = processor.applyUpdate({
 		updatedSources: new Map([
 			["a", new TestSource(`
-				foo 42
+				foo id=42
 				bar
 			`)],
 			["b", new TestSource(`
-				baz 0
+				baz id=0
 			`)],
 		]),
 		translationData: td.translationData({
@@ -142,8 +142,8 @@ test(`${DataProcessor.prototype.applyUpdate.name} (missing id)`, async t => {
 
 	t.deepEqual(result.modifiedSources, new Map([
 		["a", unindent(`
-			foo 42
-			bar 1
+			foo id=42
+			bar id=1
 		`)],
 	]));
 });
@@ -153,10 +153,10 @@ test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, multiple source
 	const result = processor.applyUpdate({
 		updatedSources: new Map([
 			["a", new TestSource(`
-				foo 0
+				foo id=0
 			`)],
 			["b", new TestSource(`
-				bar 0
+				bar id=0
 			`)],
 		]),
 	});
@@ -169,10 +169,10 @@ test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, multiple source
 
 	t.deepEqual(result.modifiedSources, new Map([
 		["a", unindent(`
-			foo 1
+			foo id=1
 		`)],
 		["b", unindent(`
-			bar 2
+			bar id=2
 		`)],
 	]));
 });
@@ -182,8 +182,8 @@ test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, single source, 
 	const result = processor.applyUpdate({
 		updatedSources: new Map([
 			["a", new TestSource(`
-				foo 0
-				bar 0
+				foo id=0
+				bar id=0
 			`)],
 		]),
 	});
@@ -196,8 +196,8 @@ test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, single source, 
 
 	t.deepEqual(result.modifiedSources, new Map([
 		["a", unindent(`
-			foo 0
-			bar 1
+			foo id=0
+			bar id=1
 		`)],
 	]));
 });
@@ -207,10 +207,10 @@ test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, multiple source
 	const result = processor.applyUpdate({
 		updatedSources: new Map([
 			["a", new TestSource(`
-				foo 0
+				foo id=0
 			`)],
 			["b", new TestSource(`
-				bar 0
+				bar id=0
 			`)],
 		]),
 		translationData: td.translationData({
@@ -228,7 +228,7 @@ test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, multiple source
 
 	t.deepEqual(result.modifiedSources, new Map([
 		["a", unindent(`
-			foo 1
+			foo id=1
 		`)],
 	]));
 });
@@ -238,8 +238,8 @@ test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, single source, 
 	const result = processor.applyUpdate({
 		updatedSources: new Map([
 			["a", new TestSource(`
-				foo 0
-				bar 0
+				foo id=0
+				bar id=0
 			`)],
 		]),
 		translationData: td.translationData({
@@ -257,8 +257,8 @@ test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, single source, 
 
 	t.deepEqual(result.modifiedSources, new Map([
 		["a", unindent(`
-			foo 0
-			bar 1
+			foo id=0
+			bar id=1
 		`)],
 	]));
 });
@@ -268,10 +268,10 @@ test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, multiple source
 	const result = processor.applyUpdate({
 		updatedSources: new Map([
 			["a", new TestSource(`
-				foo 0
+				foo id=0
 			`)],
 			["b", new TestSource(`
-				bar 0
+				bar id=0
 			`)],
 		]),
 		translationData: td.translationData({
@@ -289,10 +289,10 @@ test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, multiple source
 
 	t.deepEqual(result.modifiedSources, new Map([
 		["a", unindent(`
-			foo 1
+			foo id=1
 		`)],
 		["b", unindent(`
-			bar 2
+			bar id=2
 		`)],
 	]));
 });
@@ -302,8 +302,8 @@ test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, single source, 
 	const result = processor.applyUpdate({
 		updatedSources: new Map([
 			["a", new TestSource(`
-				foo 0
-				bar 0
+				foo id=0
+				bar id=0
 			`)],
 		]),
 		translationData: td.translationData({
@@ -321,8 +321,8 @@ test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, single source, 
 
 	t.deepEqual(result.modifiedSources, new Map([
 		["a", unindent(`
-			foo 0
-			bar 1
+			foo id=0
+			bar id=1
 		`)],
 	]));
 });
@@ -333,7 +333,7 @@ test(`${DataProcessor.prototype.applyUpdate.name} (remove source)`, t => {
 	processor.applyUpdate({
 		updatedSources: new Map([
 			["a", new TestSource(`
-				foo 0
+				foo id=0
 			`)],
 		]),
 	});
@@ -372,7 +372,7 @@ test(`${DataProcessor.prototype.applyUpdate.name} (data update, add source)`, as
 		const result = processor.applyUpdate({
 			updatedSources: new Map([
 				["a", new TestSource(`
-					foo 0
+					foo id=0
 				`)],
 			]),
 		});
@@ -391,7 +391,7 @@ test(`${DataProcessor.prototype.applyUpdate.name} (data update, add source)`, as
 			}),
 			updatedSources: new Map([
 				["b", new TestSource(`
-					bar 1
+					bar id=1
 				`)],
 			]),
 		});
@@ -410,7 +410,7 @@ test(`${DataProcessor.prototype.applyUpdate.name} (data update, update source)`,
 		const result = processor.applyUpdate({
 			updatedSources: new Map([
 				["a", new TestSource(`
-					foo 0
+					foo id=0
 				`)],
 			]),
 		});
@@ -425,7 +425,7 @@ test(`${DataProcessor.prototype.applyUpdate.name} (data update, update source)`,
 			}),
 			updatedSources: new Map([
 				["a", new TestSource(`
-					bar 0
+					bar id=0
 				`)],
 			]),
 		});
@@ -443,7 +443,7 @@ test(`${DataProcessor.prototype.applyUpdate.name} (data update, removed source)`
 		const result = processor.applyUpdate({
 			updatedSources: new Map([
 				["a", new TestSource(`
-					foo 0
+					foo id=0
 				`)],
 			]),
 		});
@@ -471,7 +471,8 @@ test(`${DataProcessor.prototype.applyUpdate.name} (data update, removed source)`
 test(`${DataProcessor.prototype.getFragmentDiagnostics.name} (empty)`, t => {
 	const processor = new DataProcessor();
 	t.deepEqual(processor.getFragmentDiagnostics({
-		translatedLocales: ["de", "ch"],
+		sourceLocale: "en",
+		translatedLocales: ["de", "zh"],
 	}), []);
 });
 
@@ -497,33 +498,34 @@ test(`${DataProcessor.prototype.getFragmentDiagnostics.name} (missing translatio
 					modified: modified,
 					translations: {
 						de: { value: "test", modified },
-						ch: { value: "test", modified },
+						zh: { value: "test", modified },
 					},
 				}),
 			},
 		}),
 		updatedSources: new Map([
 			["test", new TestSource(`
-				foo 0
-				bar 1
-				baz 2
+				foo id=0
+				bar id=1
+				baz id=2
 			`)],
 		]),
 	});
 	t.deepEqual(processor.getFragmentDiagnostics({
-		translatedLocales: ["de", "ch"],
+		sourceLocale: "en",
+		translatedLocales: ["de", "zh"],
 	}), [
 		{
 			type: "missingTranslations",
 			sourceId: "test",
 			fragmentId: "0",
-			locales: ["de", "ch"],
+			locales: ["de", "zh"],
 		},
 		{
 			type: "missingTranslations",
 			sourceId: "test",
 			fragmentId: "1",
-			locales: ["ch"],
+			locales: ["zh"],
 		},
 	]);
 });
@@ -539,7 +541,7 @@ test(`${DataProcessor.prototype.getFragmentDiagnostics.name} (unknown translatio
 					modified,
 					translations: {
 						de: { value: "test", modified },
-						ch: { value: "test", modified },
+						zh: { value: "test", modified },
 					},
 				}),
 				1: td.fragment({
@@ -553,19 +555,20 @@ test(`${DataProcessor.prototype.getFragmentDiagnostics.name} (unknown translatio
 		}),
 		updatedSources: new Map([
 			["test", new TestSource(`
-				foo 0
-				bar 1
+				foo id=0
+				bar id=1
 			`)],
 		]),
 	});
 	t.deepEqual(processor.getFragmentDiagnostics({
+		sourceLocale: "en",
 		translatedLocales: ["de"],
 	}), [
 		{
 			type: "unknownTranslations",
 			sourceId: "test",
 			fragmentId: "0",
-			locales: ["ch"],
+			locales: ["zh"],
 		},
 	]);
 });
@@ -581,7 +584,7 @@ test(`${DataProcessor.prototype.getFragmentDiagnostics.name} (outdated translati
 					modified,
 					translations: {
 						de: { value: "test", modified },
-						ch: { value: "test", modified: new Date(Date.parse(modified) - 1000).toISOString() },
+						zh: { value: "test", modified: new Date(Date.parse(modified) - 1000).toISOString() },
 					},
 				}),
 				1: td.fragment({
@@ -589,26 +592,27 @@ test(`${DataProcessor.prototype.getFragmentDiagnostics.name} (outdated translati
 					modified,
 					translations: {
 						de: { value: "test", modified },
-						ch: { value: "test", modified },
+						zh: { value: "test", modified },
 					},
 				}),
 			},
 		}),
 		updatedSources: new Map([
 			["test", new TestSource(`
-				foo 0
-				bar 1
+				foo id=0
+				bar id=1
 			`)],
 		]),
 	});
 	t.deepEqual(processor.getFragmentDiagnostics({
-		translatedLocales: ["de", "ch"],
+		sourceLocale: "en",
+		translatedLocales: ["de", "zh"],
 	}), [
 		{
 			type: "outdatedTranslations",
 			sourceId: "test",
 			fragmentId: "0",
-			locales: ["ch"],
+			locales: ["zh"],
 		},
 	]);
 });
@@ -631,22 +635,154 @@ test(`${DataProcessor.prototype.getFragmentDiagnostics.name} (duplicate fragment
 		}),
 		updatedSources: new Map([
 			["a", new TestSource(`
-				foo 0
+				foo id=0
 			`, false)],
 			["b", new TestSource(`
-				bar 0
-				baz 1
+				bar id=0
+				baz id=1
 			`, false)],
 		]),
 	});
 	t.false(processor.translationDataModified);
 	t.deepEqual(processor.getFragmentDiagnostics({
+		sourceLocale: "en",
 		translatedLocales: ["en"],
 	}), [
 		{
 			type: "duplicateFragment",
 			sourceIds: ["a", "b"],
 			fragmentId: "0",
+		},
+	]);
+});
+
+test(`${DataProcessor.prototype.getFragmentDiagnostics.name} (value type mismatch)`, t => {
+	const processor = new DataProcessor();
+	const modified = new Date().toISOString();
+	processor.applyUpdate({
+		translationData: td.translationData({
+			fragments: {
+				0: td.fragment({
+					value: "foo",
+					modified,
+					translations: {
+						de: { value: {
+							type: "plural",
+							value: ["foo", "bar"],
+						}, modified },
+					},
+				}),
+			},
+		}),
+		updatedSources: new Map([
+			["test", new TestSource(`
+				foo id=0
+			`)],
+		]),
+	});
+	t.deepEqual(processor.getFragmentDiagnostics({
+		sourceLocale: "en",
+		translatedLocales: ["de"],
+	}), [
+		{
+			type: "valueTypeMismatch",
+			sourceId: "test",
+			fragmentId: "0",
+			locales: ["de"],
+		},
+	]);
+});
+
+test(`${DataProcessor.prototype.getFragmentDiagnostics.name} (plural form count mismatch)`, t => {
+	const processor = new DataProcessor();
+	const modified = new Date().toISOString();
+	processor.applyUpdate({
+		translationData: td.translationData({
+			fragments: {
+				0: td.fragment({
+					value: {
+						type: "plural",
+						value: ["foo", "bar", "baz"],
+					},
+					modified,
+					translations: {
+						de: { value: {
+							type: "plural",
+							value: ["foo"],
+						}, modified },
+					},
+				}),
+			},
+		}),
+		updatedSources: new Map([
+			["test", new TestSource(`
+				plural: foo bar baz id=0
+			`)],
+		]),
+	});
+	t.deepEqual(processor.getFragmentDiagnostics({
+		sourceLocale: "en",
+		translatedLocales: ["de"],
+	}), [
+		{
+			type: "pluralFormCountMismatch",
+			sourceId: "test",
+			fragmentId: "0",
+			locale: "en",
+			actualFormCount: 3,
+			expectedFormCount: 2,
+		},
+		{
+			type: "pluralFormCountMismatch",
+			sourceId: "test",
+			fragmentId: "0",
+			locale: "de",
+			actualFormCount: 1,
+			expectedFormCount: 2,
+		},
+	]);
+});
+
+test(`${DataProcessor.prototype.getFragmentDiagnostics.name} (unsupported locales)`, t => {
+	const processor = new DataProcessor();
+	const modified = new Date().toISOString();
+	processor.applyUpdate({
+		translationData: td.translationData({
+			fragments: {
+				0: td.fragment({
+					value: "foo",
+					modified,
+					translations: {
+						bar: { value: "foo", modified },
+						baz: { value: "bar", modified },
+					},
+				}),
+			},
+		}),
+		updatedSources: new Map([
+			["test", new TestSource(`
+				foo id=0
+			`)],
+		]),
+		modify: false,
+	});
+	t.deepEqual(processor.getFragmentDiagnostics({
+		sourceLocale: "foo",
+		translatedLocales: ["bar"],
+	}), [
+		{
+			type: "unknownTranslations",
+			sourceId: "test",
+			fragmentId: "0",
+			locales: ["baz"],
+		},
+		{
+			type: "unsupportedLocales",
+			locales: [
+				"bar",
+				"baz",
+				"foo",
+			],
 		},
 	]);
 });
@@ -709,11 +845,11 @@ test(`${DataProcessor.prototype.generateLocaleData.name}`, t => {
 		}),
 		updatedSources: new Map([
 			["a", new TestSource(`
-				foo 0
-				bar 1
-				baz 2
-				test 3
-				# test 5
+				foo id=0
+				bar id=1
+				baz id=2
+				test id=3
+				# test id=5
 			`)],
 		]),
 		modify: false,
@@ -723,7 +859,7 @@ test(`${DataProcessor.prototype.generateLocaleData.name}`, t => {
 		namespace: "test",
 		includeOutdated: false,
 		sourceLocale: "de",
-		translatedLocales: ["en", "ch"],
+		translatedLocales: ["en", "zh"],
 	}), new Map<string, LocaleData>([
 		["de", {}],
 		["en", {
@@ -731,14 +867,14 @@ test(`${DataProcessor.prototype.generateLocaleData.name}`, t => {
 				0: "test",
 			},
 		}],
-		["ch", {}],
+		["zh", {}],
 	]));
 
 	t.deepEqual(processor.generateLocaleData({
 		namespace: "test",
 		includeOutdated: true,
 		sourceLocale: "de",
-		translatedLocales: ["en", "ch"],
+		translatedLocales: ["en", "zh"],
 	}), new Map<string, LocaleData>([
 		["de", {}],
 		["en", {
@@ -747,6 +883,6 @@ test(`${DataProcessor.prototype.generateLocaleData.name}`, t => {
 				1: "test",
 			},
 		}],
-		["ch", {}],
+		["zh", {}],
 	]));
 });

@@ -7,12 +7,22 @@ export type Diagnostic = {
 	fragmentId: string;
 	locales: string[];
 } | {
+	type: "pluralFormCountMismatch";
+	sourceId: string;
+	fragmentId: string;
+	locale: string;
+	actualFormCount: number;
+	expectedFormCount: number;
+} | {
 	type: "duplicateFragment";
 	sourceIds: string[];
 	fragmentId: string;
 } | {
 	type: "unsupportedSource";
 	sourceId: string;
+} | {
+	type: "unsupportedLocales";
+	locales: string[];
 } | {
 	type: "projectOutOfSync";
 };
@@ -23,7 +33,11 @@ export const diagnosticTypes = new Set<DiagnosticType>([
 	"missingTranslations",
 	"outdatedTranslations",
 	"unknownTranslations",
+	"valueTypeMismatch",
+	"pluralFormCountMismatch",
+	"duplicateFragment",
 	"unsupportedSource",
+	"unsupportedLocales",
 	"projectOutOfSync",
 ]);
 
@@ -64,7 +78,8 @@ export function getDiagnosticLocations(rootDir: string, dataProcessor: DataProce
 		case "missingTranslations":
 		case "outdatedTranslations":
 		case "unknownTranslations":
-		case "valueTypeMismatch": {
+		case "valueTypeMismatch":
+		case "pluralFormCountMismatch": {
 			const source = dataProcessor.getSource(diagnostic.sourceId);
 			const filename = Source.sourceIdToFilename(rootDir, diagnostic.sourceId);
 			if (source === undefined) {
@@ -130,6 +145,7 @@ export function getDiagnosticLocations(rootDir: string, dataProcessor: DataProce
 				filename: Source.sourceIdToFilename(rootDir, diagnostic.sourceId),
 			}];
 
+		case "unsupportedLocales":
 		case "projectOutOfSync":
 			return [];
 	}
@@ -146,22 +162,28 @@ export function getDiagnosticMessage(diagnostic: Diagnostic): string {
 
 	switch (diagnostic.type) {
 		case "missingTranslations":
-			return `Fragment ${string(diagnostic.fragmentId)} is missing translations for locale(s) ${list(diagnostic.locales)}.`;
+			return `Fragment ${string(diagnostic.fragmentId)} is missing translations for ${list(diagnostic.locales)}.`;
 
 		case "outdatedTranslations":
-			return `Fragment ${string(diagnostic.fragmentId)} has outdated translations for locale(s) ${list(diagnostic.locales)}.`;
+			return `Fragment ${string(diagnostic.fragmentId)} has outdated translations for ${list(diagnostic.locales)}.`;
 
 		case "unknownTranslations":
-			return `Fragment ${string(diagnostic.fragmentId)} has translations for unknown locale(s) ${list(diagnostic.locales)}.`;
+			return `Fragment ${string(diagnostic.fragmentId)} has translations for unknown locales ${list(diagnostic.locales)}.`;
 
 		case "valueTypeMismatch":
-			return `Fragment ${string(diagnostic.fragmentId)} has a translation with a wrong value type for locale(s) ${list(diagnostic.locales)}.`;
+			return `Fragment ${string(diagnostic.fragmentId)} has a translation with a wrong value type for ${list(diagnostic.locales)}.`;
+
+		case "pluralFormCountMismatch":
+			return `Fragment ${string(diagnostic.fragmentId)} has a value for ${string(diagnostic.locale)} with ${diagnostic.actualFormCount} instead of ${diagnostic.expectedFormCount} plural form(s).`;
 
 		case "duplicateFragment":
 			return `Duplicate fragment id ${string(diagnostic.fragmentId)}.`;
 
 		case "unsupportedSource":
 			return `Source ${string(diagnostic.sourceId)} could not be parsed.`;
+
+		case "unsupportedLocales":
+			return `Locales ${list(diagnostic.locales)} are not supported.`;
 
 		case "projectOutOfSync":
 			return `Translation data and sources are not in sync.`;
