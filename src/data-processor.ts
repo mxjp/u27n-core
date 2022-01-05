@@ -223,6 +223,7 @@ export class DataProcessor {
 		const data = new Map<string, LocaleData>();
 
 		const { translatedLocales } = options;
+		data.set(options.sourceLocale, Object.create(null) as {});
 		for (let i = 0; i < translatedLocales.length; i++) {
 			data.set(translatedLocales[i], Object.create(null) as {});
 		}
@@ -304,6 +305,7 @@ export declare namespace DataProcessor {
 
 	export interface GenerateLocateDataOptions {
 		namespace: string;
+		sourceLocale: string;
 		translatedLocales: string[];
 		includeOutdated: boolean;
 	}

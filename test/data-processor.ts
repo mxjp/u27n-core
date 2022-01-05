@@ -722,8 +722,10 @@ test(`${DataProcessor.prototype.generateLocaleData.name}`, t => {
 	t.deepEqual(processor.generateLocaleData({
 		namespace: "test",
 		includeOutdated: false,
+		sourceLocale: "de",
 		translatedLocales: ["en", "ch"],
 	}), new Map<string, LocaleData>([
+		["de", {}],
 		["en", {
 			test: {
 				0: "test",
@@ -735,8 +737,10 @@ test(`${DataProcessor.prototype.generateLocaleData.name}`, t => {
 	t.deepEqual(processor.generateLocaleData({
 		namespace: "test",
 		includeOutdated: true,
+		sourceLocale: "de",
 		translatedLocales: ["en", "ch"],
 	}), new Map<string, LocaleData>([
+		["de", {}],
 		["en", {
 			test: {
 				0: "test",

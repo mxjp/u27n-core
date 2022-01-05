@@ -160,6 +160,7 @@ export class Project {
 		if (this.config.output.filename) {
 			const data = this.dataProcessor.generateLocaleData({
 				namespace: this.config.namespace,
+				sourceLocale: this.config.sourceLocale,
 				translatedLocales: this.config.translatedLocales,
 				includeOutdated: this.config.output.includeOutdated,
 			});

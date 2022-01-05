@@ -58,7 +58,7 @@ async function readTranslationData(cwd: string, path = "u27n-data.json"): Promis
 async function readLocaleData(cwd: string, path = "locale"): Promise<Map<string, LocaleData>> {
 	const dirname = resolve(cwd, path);
 	const data = new Map<string, LocaleData>();
-	for (const name of await readdir(dirname)) {
+	for (const name of await (await readdir(dirname)).sort()) {
 		const match = /^(.*)\.json$/.exec(name);
 		if (match) {
 			data.set(match[1], JSON.parse(await readFile(join(dirname, name), "utf-8")) as LocaleData);
@@ -79,6 +79,7 @@ test("empty project, no translation data", async t => {
 	await exec(t, cwd, ...cliArgs(...cliConfig));
 	t.deepEqual(await readLocaleData(cwd), new Map([
 		["de", {}],
+		["en", {}],
 	]));
 });
 
@@ -106,12 +107,13 @@ test("sync project", async t => {
 		},
 	});
 	await exec(t, cwd, ...cliArgs(...cliConfig));
-	t.deepEqual(await readLocaleData(cwd), new Map([
+	t.deepEqual(await readLocaleData(cwd), new Map<string, LocaleData>([
 		["de", {
 			test: {
 				0: "bar",
 			},
 		}],
+		["en", {}],
 	]));
 });
 
@@ -143,6 +145,7 @@ test("out of sync project", async t => {
 
 	t.deepEqual(await readLocaleData(cwd), new Map([
 		["de", {}],
+		["en", {}],
 	]));
 });
 
