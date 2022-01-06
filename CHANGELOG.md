@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.7
++ Add file system watcher delays.
++ Add config option to control obsolete fragment discarding.
+
 ## 1.6
 + Add diagnostics: `valueTypeMismatch`, `pluralFormCountMismatch`, `unsupportedLocales`
 + Add plural info module.
