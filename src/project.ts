@@ -75,6 +75,7 @@ export class Project {
 					removedSources,
 					translationData,
 					modify: true,
+					discardObsolete: this.config.obsolete.discard,
 				});
 
 				if (options.modify) {
@@ -129,6 +130,7 @@ export class Project {
 			translationData,
 			updatedSources: sources,
 			modify: true,
+			discardObsolete: this.config.obsolete.discard,
 		});
 
 		if (options.modify) {

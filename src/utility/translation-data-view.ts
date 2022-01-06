@@ -1,3 +1,4 @@
+import { DiscardObsoleteFragmentType } from "../obsolete-handling.js";
 import type { Source } from "../source.js";
 import type { TranslationData } from "../translation-data.js";
 
@@ -79,35 +80,23 @@ export class TranslationDataView {
 	/**
 	 * Remove fragments of a specific source that match a filter.
 	 */
-	public removeFragmentsOfSource(sourceId: string, filter?: TranslationDataView.FragmentFilter): void {
+	public removeFragmentsOfSource(sourceId: string, discardObsolete: DiscardObsoleteFragmentType, filter?: TranslationDataView.FragmentFilter): void {
 		this.#sources.get(sourceId)?.forEach(fragmentId => {
 			const fragment = this.data.fragments[fragmentId];
 			if (!filter || filter(fragmentId, fragment)) {
-				this.#removeFragment(fragmentId, fragment);
+				this.#removeFragment(fragmentId, fragment, discardObsolete);
 			}
 		});
 	}
 
 	/**
-	 * Remove fragments that match a filter.
-	 */
-	public removeFragments(filter: TranslationDataView.FragmentFilter): void {
-		for (const fragmentId in this.data.fragments) {
-			const fragment = this.data.fragments[fragmentId];
-			if (filter(fragmentId, fragment)) {
-				this.#removeFragment(fragmentId, fragment);
-			}
-		}
-	}
-
-	/**
 	 * Remove all fragments of all sources that match the filter.
 	 */
-	public removeSources(filter: TranslationDataView.SourceFilter): void {
+	public removeSources(filter: TranslationDataView.SourceFilter, discardObsolete: DiscardObsoleteFragmentType): void {
 		this.#sources.forEach((fragmentIds, sourceId) => {
 			if (filter(sourceId)) {
 				fragmentIds.forEach(fragmentId => {
-					this.#removeFragment(fragmentId, this.data.fragments[fragmentId]);
+					this.#removeFragment(fragmentId, this.data.fragments[fragmentId], discardObsolete);
 				});
 			}
 		});
@@ -146,10 +135,10 @@ export class TranslationDataView {
 	/**
 	 * Internal function to remove a fragment.
 	 */
-	#removeFragment(fragmentId: string, fragment: TranslationData.Fragment): void {
+	#removeFragment(fragmentId: string, fragment: TranslationData.Fragment, discardObsolete: DiscardObsoleteFragmentType): void {
 		this.#removeSourceFragmentPair(fragment.sourceId, fragmentId);
 		delete this.data.fragments[fragmentId];
-		if (Object.keys(fragment.translations).length > 0) {
+		if (!TranslationDataView.#shouldDiscardFragment(fragment, discardObsolete)) {
 			this.data.obsolete.push([fragmentId, fragment]);
 		}
 		this.modified = true;
@@ -177,6 +166,26 @@ export class TranslationDataView {
 		}
 	}
 
+	static #shouldDiscardFragment(fragment: TranslationData.Fragment, type: DiscardObsoleteFragmentType): boolean {
+		switch (type) {
+			case DiscardObsoleteFragmentType.Outdated: {
+				const fragmentModified = TranslationDataView.parseTimestamp(fragment.modified);
+				for (const locale in fragment.translations) {
+					if (!TranslationDataView.isOutdated(fragmentModified, fragment.translations[locale])) {
+						return false;
+					}
+				}
+				return true;
+			}
+
+			case DiscardObsoleteFragmentType.Untranslated:
+				return Object.keys(fragment.translations).length === 0;
+
+			case DiscardObsoleteFragmentType.All:
+				return true;
+		}
+	}
+
 	/**
 	 * Utility for checking if two json serializable values are deeply equal.
 	 */
@@ -196,6 +205,20 @@ export class TranslationDataView {
 	 */
 	static #createTimestamp(date: Date = new Date()): string {
 		return date.toISOString();
+	}
+
+	/**
+	 * Parse a timestamp used in translation data objects.
+	 */
+	public static parseTimestamp(timestamp: string): number {
+		return Date.parse(timestamp);
+	}
+
+	/**
+	 * Check if a translation is outdated compared to the parsed date of the fragment.
+	 */
+	public static isOutdated(fragmentModified: number, translation: TranslationData.Translation): boolean {
+		return Date.parse(translation.modified) < fragmentModified;
 	}
 
 	/**

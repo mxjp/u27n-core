@@ -3,6 +3,7 @@ import { dirname, normalize, resolve } from "path";
 import resolveModule from "resolve";
 
 import { DiagnosticSeverityConfig, DiagnosticType, diagnosticTypes } from "./diagnostics.js";
+import { DiscardObsoleteFragmentType, discardObsoleteFragmentTypes } from "./obsolete-handling.js";
 
 export interface Config {
 	readonly context: string;
@@ -12,6 +13,7 @@ export interface Config {
 	readonly sourceLocale: string;
 	readonly translatedLocales: string[];
 	readonly plugins: Config.Plugin[];
+	readonly obsolete: Config.Obsolete;
 	readonly output: Config.Output;
 	readonly diagnostics: DiagnosticSeverityConfig;
 }
@@ -23,6 +25,7 @@ export namespace Config {
 		include?: string[];
 		locales?: string[];
 		plugins?: (string | PluginJson)[];
+		obsolete?: ObsoleteJson;
 		output?: OutputJson;
 		diagnostics?: DiagnosticSeverityConfig;
 	}
@@ -35,6 +38,14 @@ export namespace Config {
 	export interface Plugin {
 		readonly entry: string;
 		readonly config: unknown;
+	}
+
+	export interface Obsolete {
+		discard: DiscardObsoleteFragmentType;
+	}
+
+	export interface ObsoleteJson {
+		discard?: DiscardObsoleteFragmentType;
 	}
 
 	export interface TranslationData {
@@ -126,6 +137,11 @@ export namespace Config {
 			plugins.push({ entry, config });
 		}
 
+		const obsoleteDiscard = json.obsolete?.discard ?? DiscardObsoleteFragmentType.Outdated;
+		if (!discardObsoleteFragmentTypes.has(obsoleteDiscard)) {
+			throw new TypeError(`obsolete.discard must be one of ${JSON.stringify(Array.from(discardObsoleteFragmentTypes))}.`);
+		}
+
 		const rawOutputFilename = json.output?.filename ?? "./dist/locale/[locale].json";
 		if (rawOutputFilename !== null && typeof rawOutputFilename !== "string") {
 			throw new TypeError("output.filename must be a string.");
@@ -158,6 +174,9 @@ export namespace Config {
 			sourceLocale: locales[0],
 			translatedLocales: locales.slice(1),
 			plugins,
+			obsolete: {
+				discard: obsoleteDiscard,
+			},
 			output: {
 				filename: outputFilename,
 				includeOutdated: outputIncludeOutdated,

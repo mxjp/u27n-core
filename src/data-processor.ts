@@ -1,5 +1,6 @@
 import { Diagnostic } from "./diagnostics.js";
 import { Base62FragmentIdGenerator, FragmentIdGenerator } from "./fragment-id-generator.js";
+import { DiscardObsoleteFragmentType } from "./obsolete-handling.js";
 import { getPluralInfo } from "./plural-info.js";
 import { LocaleData } from "./runtime/locale-data.js";
 import type { Source } from "./source.js";
@@ -67,6 +68,8 @@ export class DataProcessor {
 		const modify = update.modify ?? true;
 		const modifiedSources = new Map<string, string>();
 
+		const discardObsolete = update.discardObsolete ?? DiscardObsoleteFragmentType.All;
+
 		function updateSource(this: DataProcessor, source: Source, sourceId: string) {
 			if (source.update) {
 				const updateResult = source.update({
@@ -101,7 +104,7 @@ export class DataProcessor {
 				updateResult.fragments.forEach((update, fragmentId) => {
 					this.#translationDataView.updateFragment(sourceId, fragmentId, update);
 				});
-				this.#translationDataView.removeFragmentsOfSource(sourceId, fragmentId => {
+				this.#translationDataView.removeFragmentsOfSource(sourceId, discardObsolete, fragmentId => {
 					return !updateResult.fragments.has(fragmentId);
 				});
 			} else {
@@ -116,7 +119,7 @@ export class DataProcessor {
 						});
 					}
 				});
-				this.#translationDataView.removeFragmentsOfSource(sourceId, fragmentId => {
+				this.#translationDataView.removeFragmentsOfSource(sourceId, discardObsolete, fragmentId => {
 					return !staticFragments.has(fragmentId);
 				});
 			}
@@ -158,7 +161,7 @@ export class DataProcessor {
 		if (modify) {
 			this.#translationDataView.removeSources(sourceId => {
 				return !this.#sources.has(sourceId);
-			});
+			}, discardObsolete);
 		}
 
 		return { modifiedSources };
@@ -172,7 +175,7 @@ export class DataProcessor {
 		const sourcePluralInfo = getPluralInfo(options.sourceLocale);
 
 		this.#translationDataView.forEachFragment((fragmentId, fragment) => {
-			const sourceModified = Date.parse(fragment.modified);
+			const fragmentModified = TranslationDataView.parseTimestamp(fragment.modified);
 
 			const missingLocales = new Set(options.translatedLocales);
 			const unknownLocales: string[] = [];
@@ -200,7 +203,7 @@ export class DataProcessor {
 				if (!missingLocales.delete(locale)) {
 					unknownLocales.push(locale);
 				}
-				if (Date.parse(translation.modified) < sourceModified) {
+				if (TranslationDataView.isOutdated(fragmentModified, translation)) {
 					outdatedLocales.push(locale);
 				}
 				if (!TranslationDataView.valueTypeEquals(fragment.value, translation.value)) {
@@ -313,13 +316,13 @@ export class DataProcessor {
 					const fragmentData = this.#translationDataView.getSyncFragment(sourceId, fragment);
 					// eslint-disable-next-line @typescript-eslint/prefer-optional-chain
 					if (fragmentData !== null && fragmentData.value !== null) {
-						const modified = Date.parse(fragmentData.modified);
+						const fragmentModified = TranslationDataView.parseTimestamp(fragmentData.modified);
 						for (let i = 0; i < translatedLocales.length; i++) {
 							const locale = translatedLocales[i];
 							const translation = fragmentData.translations[locale];
 							if (translation !== undefined
 								&& TranslationDataView.valueTypeEquals(fragmentData.value, translation.value)
-								&& (options.includeOutdated || Date.parse(translation.modified) >= modified)) {
+								&& (options.includeOutdated || !TranslationDataView.isOutdated(fragmentModified, translation))) {
 								addValue(locale, options.namespace, fragment.fragmentId!, toValue(translation.value));
 							}
 						}
@@ -351,6 +354,8 @@ export declare namespace DataProcessor {
 		translationData?: TranslationData;
 		/** True to allow modifying sources */
 		modify?: boolean;
+		/** How to handle discarding obsolete fragments */
+		discardObsolete?: DiscardObsoleteFragmentType;
 	}
 
 	export interface UpdateResult {
