@@ -74,7 +74,7 @@ export class Project {
 					updatedSources,
 					removedSources,
 					translationData,
-					modify: true,
+					modify: options.modify,
 					discardObsolete: this.config.obsolete.discard,
 				});
 
