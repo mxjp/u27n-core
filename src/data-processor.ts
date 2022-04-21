@@ -135,11 +135,19 @@ export class DataProcessor {
 				const sourceFragment = fragments[i];
 				const dataFragment = this.#translationDataView.getSyncFragment(sourceId, sourceFragment);
 				if (dataFragment !== null) {
+					const translations: Record<string, TranslationData.Translation> = {
+						...dataFragment.translations,
+					};
+
+					this.#pendingTranslationChanges.get(sourceFragment.fragmentId!)?.forEach((translation, locale) => {
+						translations[locale] = translation;
+					});
+
 					editableFragments.push({
 						sourceId,
 						fragmentId: sourceFragment.fragmentId!,
 						enabled: sourceFragment.enabled,
-						translations: {},
+						translations,
 						value: dataFragment.value,
 						modified: dataFragment.modified,
 						start: sourceFragment.start,
