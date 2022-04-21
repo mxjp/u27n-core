@@ -1,10 +1,12 @@
+import { Position } from "@mpt/line-map";
+
 import { Diagnostic } from "./diagnostics.js";
 import { Base62FragmentIdGenerator, FragmentIdGenerator } from "./fragment-id-generator.js";
 import { DiscardObsoleteFragmentType } from "./obsolete-handling.js";
 import { getPluralInfo } from "./plural-info.js";
 import { LocaleData } from "./runtime/locale-data.js";
 import type { Source } from "./source.js";
-import type { TranslationData } from "./translation-data.js";
+import { TranslationData } from "./translation-data.js";
 import { SourceFragmentMap } from "./utility/source-fragment-map.js";
 import { TranslationDataView } from "./utility/translation-data-view.js";
 
@@ -32,8 +34,20 @@ export class DataProcessor {
 	 */
 	readonly #sourceFragments = new SourceFragmentMap();
 
+	/**
+	 * Map from fragment ids to locales to translations.
+	 */
+	readonly #pendingTranslationChanges = new Map<string, Map<string, TranslationData.Translation>>();
+
 	public constructor(options: DataProcessor.Options = {}) {
 		this.#fragmentIdGenerator = options.fragmentIdGenerator ?? new Base62FragmentIdGenerator();
+	}
+
+	/**
+	 * True if there are any pending changes.
+	 */
+	public get hasPendingChanges(): boolean {
+		return this.#pendingTranslationChanges.size > 0;
 	}
 
 	/**
@@ -59,6 +73,84 @@ export class DataProcessor {
 	 */
 	public getSource(sourceId: string): Source | undefined {
 		return this.#sources.get(sourceId);
+	}
+
+	/**
+	 * Set a translation.
+	 *
+	 * Note, that the translation data object is not changed in place, but a pending change is created.
+	 *
+	 * @see {applyPendingChanges}
+	 */
+	public setTranslation(fragmentId: string, locale: string, value: TranslationData.Value, modified?: Date): void {
+		const translation: TranslationData.Translation = {
+			modified: TranslationDataView.createTimestamp(modified),
+			value,
+		};
+
+		const translations = this.#pendingTranslationChanges.get(fragmentId);
+		if (translations === undefined) {
+			this.#pendingTranslationChanges.set(fragmentId, new Map([
+				[locale, translation],
+			]));
+		} else {
+			translations.set(locale, translation);
+		}
+	}
+
+	/**
+	 * Discard all pending changes.
+	 */
+	public discardPendingChanges(): void {
+		this.#pendingTranslationChanges.clear();
+	}
+
+	/**
+	 * Apply translation changes to a copy of the current translation data object.
+	 */
+	public applyPendingChanges(): TranslationData {
+		const data = TranslationData.clone(this.#translationDataView.data);
+		this.#pendingTranslationChanges.forEach((locales, fragmentId) => {
+			const fragment = data.fragments[fragmentId];
+			if (fragment !== undefined) {
+				locales.forEach((translation, locale) => {
+					fragment.translations[locale] = translation;
+				});
+			}
+		});
+		return data;
+	}
+
+	/**
+	 * Get an array of all fragments for a specific source that are in sync.
+	 *
+	 * @returns The array of editable fragments or undefined if the source does not exist.
+	 */
+	public getEditableFragments(sourceId: string): DataProcessor.EditableFragment[] | undefined {
+		const source = this.#sources.get(sourceId);
+		if (source !== undefined) {
+			const editableFragments: DataProcessor.EditableFragment[] = [];
+			const fragments = source.fragments;
+			for (let i = 0; i < fragments.length; i++) {
+				const sourceFragment = fragments[i];
+				const dataFragment = this.#translationDataView.getSyncFragment(sourceId, sourceFragment);
+				if (dataFragment !== null) {
+					editableFragments.push({
+						sourceId,
+						fragmentId: sourceFragment.fragmentId!,
+						enabled: sourceFragment.enabled,
+						translations: {},
+						value: dataFragment.value,
+						modified: dataFragment.modified,
+						start: sourceFragment.start,
+						startPos: source.lineMap.getPosition(sourceFragment.start),
+						end: sourceFragment.end,
+						endPos: source.lineMap.getPosition(sourceFragment.end),
+					});
+				}
+			}
+			return editableFragments;
+		}
 	}
 
 	/**
@@ -174,7 +266,9 @@ export class DataProcessor {
 
 		const sourcePluralInfo = getPluralInfo(options.sourceLocale);
 
-		this.#translationDataView.forEachFragment((fragmentId, fragment) => {
+		this.#translationDataView.forEachSyncFragment(sourceId => {
+			return this.#sources.get(sourceId);
+		}, (fragmentId, fragment) => {
 			const fragmentModified = TranslationDataView.parseTimestamp(fragment.modified);
 
 			const missingLocales = new Set(options.translatedLocales);
@@ -346,7 +440,7 @@ export declare namespace DataProcessor {
 	}
 
 	export interface Update {
-		/** Map of source ids to new sources or sources that have been changed on disk */
+		/** Map of source ids to new sources or sources that have been updated on disk */
 		updatedSources?: Map<string, Source>;
 		/** Set of source ids that have been removed from disk */
 		removedSources?: Set<string>;
@@ -373,5 +467,13 @@ export declare namespace DataProcessor {
 		sourceLocale: string;
 		translatedLocales: string[];
 		includeOutdated: boolean;
+	}
+
+	export interface EditableFragment extends TranslationData.Fragment {
+		fragmentId: string;
+		start: number;
+		startPos: Position | null;
+		end: number;
+		endPos: Position | null;
 	}
 }

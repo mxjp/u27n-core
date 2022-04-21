@@ -1,6 +1,6 @@
 import chokidar from "chokidar";
-import { mkdir, readdir, readFile, writeFile } from "fs/promises";
-import { dirname, join, relative, sep } from "path";
+import { access, mkdir, readdir, readFile, writeFile } from "fs/promises";
+import { dirname, join, relative, resolve, sep } from "path";
 import createMatcher, { Matcher, scan } from "picomatch";
 import { clearTimeout, setTimeout } from "timers";
 
@@ -11,13 +11,41 @@ function isOrContains(parent: string, nested: string): boolean {
 }
 
 export class NodeFileSystem implements FileSystem {
-	public readFile(filename: string): Promise<string> {
-		return readFile(filename, "utf-8");
+	readonly #overwrites = new Map<string, string>();
+	readonly #overwriteHandlers = new Set<(filename: string) => void>();
+
+	public async overwrite(filename: string, content: string | null): Promise<void> {
+		filename = resolve(filename);
+		if (content === null) {
+			try {
+				this.#overwrites.delete(filename);
+
+				await access(filename);
+				this.#overwriteHandlers.forEach(handler => handler(filename));
+			// eslint-disable-next-line no-empty
+			} catch {}
+		} else {
+			try {
+				this.#overwrites.set(filename, content);
+
+				const realContent = await readFile(filename, "utf-8");
+				if (realContent !== content) {
+					this.#overwriteHandlers.forEach(handler => handler(filename));
+				}
+			// eslint-disable-next-line no-empty
+			} catch {}
+		}
+	}
+
+	public async readFile(filename: string): Promise<string> {
+		filename = resolve(filename);
+		return this.#overwrites.get(filename) ?? readFile(filename, "utf-8");
 	}
 
 	public async readOptionalFile(filename: string): Promise<string | undefined> {
+		filename = resolve(filename);
 		try {
-			return await readFile(filename, "utf-8");
+			return this.#overwrites.get(filename) ?? await readFile(filename, "utf-8");
 		} catch (error) {
 			if ((error as NodeJS.ErrnoException).code === "ENOENT") {
 				return undefined;
@@ -68,6 +96,12 @@ export class NodeFileSystem implements FileSystem {
 			}, options.delay);
 		}
 
+		const overwriteHandler = (filename: string) => {
+			updated.add(filename);
+			handleChanges();
+		};
+		this.#overwriteHandlers.add(overwriteHandler);
+
 		watcher.on("add", filename => {
 			filename = join(options.cwd, filename);
 			updated.add(filename);
@@ -99,6 +133,7 @@ export class NodeFileSystem implements FileSystem {
 		});
 
 		return async () => {
+			this.#overwriteHandlers.delete(overwriteHandler);
 			await watcher.close();
 			if (handleChangesTimer !== null) {
 				clearTimeout(handleChangesTimer);

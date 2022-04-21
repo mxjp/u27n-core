@@ -21,7 +21,7 @@ export class SourceFragmentMap {
 	/**
 	 * Update all fragments of the specified source.
 	 */
-	public updateSource(sourceId: string, fragmentMap: Map<string, Source.Fragment>): void {
+	public updateSource(sourceId: string, fragmentMap: ReadonlyMap<string, Source.Fragment>): void {
 		let fragmentIds = this.#sourceToFragments.get(sourceId);
 		if (fragmentIds === undefined) {
 			if (fragmentMap.size > 0) {

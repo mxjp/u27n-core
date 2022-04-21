@@ -78,4 +78,8 @@ export namespace TranslationData {
 		}
 		return JSON.stringify(data, null, "\t") + "\n";
 	}
+
+	export function clone(data: TranslationData): TranslationData {
+		return JSON.parse(JSON.stringify(data)) as TranslationData;
+	}
 }

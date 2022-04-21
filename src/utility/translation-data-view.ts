@@ -47,7 +47,7 @@ export class TranslationDataView {
 		if (existingFragment) {
 			if (!TranslationDataView.#jsonEquals(existingFragment.value, update.value)) {
 				existingFragment.value = update.value ?? null;
-				existingFragment.modified = TranslationDataView.#createTimestamp();
+				existingFragment.modified = TranslationDataView.createTimestamp();
 				this.modified = true;
 			}
 			if (existingFragment.enabled !== update.enabled) {
@@ -69,7 +69,7 @@ export class TranslationDataView {
 				sourceId,
 				enabled: update.enabled,
 				value: update.value ?? null,
-				modified: TranslationDataView.#createTimestamp(),
+				modified: TranslationDataView.createTimestamp(),
 				translations: oldTranslations === undefined ? {} : TranslationDataView.#cloneJson(oldTranslations),
 			};
 			this.#addSourceFragmentPair(sourceId, fragmentId);
@@ -130,6 +130,20 @@ export class TranslationDataView {
 		for (const name in this.data.fragments) {
 			callback(name, this.data.fragments[name]);
 		}
+	}
+
+	/**
+	 * Iterate over all fragments that are in sync.
+	 */
+	public forEachSyncFragment(getSource: (sourceId: string) => Source | undefined, callback: (fragmentId: string, fragment: TranslationData.Fragment) => void): void {
+		this.forEachFragment((fragmentId, fragment) => {
+			const source = getSource(fragment.sourceId)?.fragmentMap.get(fragmentId);
+			if (source
+				&& TranslationDataView.#jsonEquals(fragment.value, source.value)
+				&& fragment.enabled === source.enabled) {
+				callback(fragmentId, fragment);
+			}
+		});
 	}
 
 	/**
@@ -203,7 +217,7 @@ export class TranslationDataView {
 	/**
 	 * Get a timestamp that can be used in the data object json format.
 	 */
-	static #createTimestamp(date: Date = new Date()): string {
+	public static createTimestamp(date: Date = new Date()): string {
 		return date.toISOString();
 	}
 

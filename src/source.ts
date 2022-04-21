@@ -42,7 +42,7 @@ export class Source<F extends Source.Fragment = Source.Fragment> {
 	/**
 	 * An array of all fragments in this source.
 	 */
-	public get fragments(): F[] {
+	public get fragments(): readonly F[] {
 		if (this.#fragments === undefined) {
 			this.#fragments = this.parse ? this.parse() : [];
 		}
@@ -54,7 +54,7 @@ export class Source<F extends Source.Fragment = Source.Fragment> {
 	 *
 	 * Note that this may not contain all fragments if there are any duplicate fragment ids.
 	 */
-	public get fragmentMap(): Map<string, F> {
+	public get fragmentMap(): ReadonlyMap<string, F> {
 		if (this.#fragmentMap === undefined) {
 			const map = new Map<string, F>();
 			const fragments = this.fragments;

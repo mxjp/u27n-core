@@ -1,16 +1,21 @@
-import { pathToFileURL } from "url";
+import { fileURLToPath, pathToFileURL } from "url";
+import { inspect } from "util";
 import * as lsp from "vscode-languageserver/node";
 import { TextDocument } from "vscode-languageserver-textdocument";
 
 import { Project } from "..";
 import { Config } from "../config.js";
+import { DataProcessor } from "../data-processor.js";
 import { Diagnostic, DiagnosticLocation, DiagnosticSeverity, getDiagnosticLocations, getDiagnosticMessage, getDiagnosticSeverity } from "../diagnostics.js";
+import { getPluralInfo } from "../plural-info.js";
 import { Source } from "../source.js";
+import { TranslationData } from "../translation-data.js";
 import { NodeFileSystem } from "../utility/file-system-node.js";
-import { LspOptions } from "./options.js";
+import type { LocaleInfo, Options, ProjectInfo, SetTranslationRequest } from "./types.js";
 
 const connection = lsp.createConnection(lsp.ProposedFeatures.all);
 const documents = new lsp.TextDocuments(TextDocument);
+const fileSystem = new NodeFileSystem();
 
 let project: Project | null = null;
 
@@ -21,14 +26,55 @@ const LSP_SEVERITY: Record<DiagnosticSeverity, lsp.DiagnosticSeverity | null> = 
 	error: lsp.DiagnosticSeverity.Error,
 };
 
+documents.onDidChangeContent(event => {
+	void fileSystem.overwrite(fileURLToPath(event.document.uri), event.document.getText());
+});
+
+documents.onDidClose(event => {
+	void fileSystem.overwrite(fileURLToPath(event.document.uri), null);
+});
+
 connection.onInitialize(async params => {
-	const options = params.initializationOptions as LspOptions;
+	const options = params.initializationOptions as Options;
+	connection.console.info(`Using options: ${inspect(options, false, 99, false)}`);
 
 	const config = await Config.read(options.configFilename);
+	connection.console.info(`Using config: ${inspect(config, false, 99, false)}`);
 
 	project = await Project.create({
 		config,
-		fileSystem: new NodeFileSystem(),
+		fileSystem,
+	});
+
+	connection.onRequest("u27n/get-project-info", (): ProjectInfo => {
+		function getLocaleInfo(locale: string): LocaleInfo {
+			return {
+				locale,
+				pluralInfo: getPluralInfo(locale),
+			};
+		}
+		return {
+			sourceLocale: getLocaleInfo(config.sourceLocale),
+			translatedLocales: config.translatedLocales.map(getLocaleInfo),
+		};
+	});
+
+	connection.onRequest("u27n/get-editable-fragments", (sourceFilename: string): DataProcessor.EditableFragment[] | null => {
+		const sourceId = Source.filenameToSourceId(project!.config.context, sourceFilename);
+		return project!.dataProcessor.getEditableFragments(sourceId) ?? null;
+	});
+
+	connection.onRequest("u27n/set-translation", (req: SetTranslationRequest) => {
+		project!.dataProcessor.setTranslation(req.fragmentId, req.locale, req.value);
+	});
+
+	connection.onRequest("u27n/save-changes", async () => {
+		const data = project!.dataProcessor.applyPendingChanges();
+		await fileSystem.writeFile(config.translationData.filename, TranslationData.formatJson(data, config.translationData.sorted));
+	});
+
+	connection.onRequest("u27n/discard-changes", () => {
+		project!.dataProcessor.discardPendingChanges();
 	});
 
 	project.watch({
@@ -89,8 +135,12 @@ connection.onInitialize(async params => {
 					diagnostics,
 				});
 			});
+
+			connection.sendNotification("u27n/project-update", {});
 		},
 	});
+
+	connection.console.info(`Watching project...`);
 
 	return {
 		capabilities: {
