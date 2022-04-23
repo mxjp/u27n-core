@@ -72,10 +72,12 @@ connection.onInitialize(async params => {
 		const data = project!.dataProcessor.applyPendingChanges();
 		await fileSystem.writeFile(config.translationData.filename, TranslationData.formatJson(data, config.translationData.sorted));
 		project!.dataProcessor.discardPendingChanges();
+		connection.sendNotification("u27n/project-update", {});
 	});
 
 	connection.onRequest("u27n/discard-changes", () => {
 		project!.dataProcessor.discardPendingChanges();
+		connection.sendNotification("u27n/project-update", {});
 	});
 
 	project.watch({
