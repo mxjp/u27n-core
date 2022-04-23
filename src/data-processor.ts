@@ -139,8 +139,10 @@ export class DataProcessor {
 						...dataFragment.translations,
 					};
 
+					const editedLocales: string[] = [];
 					this.#pendingTranslationChanges.get(sourceFragment.fragmentId!)?.forEach((translation, locale) => {
 						translations[locale] = translation;
+						editedLocales.push(locale);
 					});
 
 					editableFragments.push({
@@ -154,6 +156,7 @@ export class DataProcessor {
 						startPos: source.lineMap.getPosition(sourceFragment.start),
 						end: sourceFragment.end,
 						endPos: source.lineMap.getPosition(sourceFragment.end),
+						editedLocales,
 					});
 				}
 			}
@@ -483,5 +486,6 @@ export declare namespace DataProcessor {
 		startPos: Position | null;
 		end: number;
 		endPos: Position | null;
+		editedLocales: string[];
 	}
 }
