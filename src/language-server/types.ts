@@ -1,9 +1,12 @@
+import { DataProcessor } from "../data-processor.js";
 import { PluralInfo } from "../plural-info.js";
 import { TranslationData } from "../translation-data.js";
 
 export interface Options {
 	configFilename: string;
 	watchDelay?: number;
+	pendingChanges?: DataProcessor.PendingChanges;
+	backupPendingChanges?: number;
 }
 
 export interface LocaleInfo {

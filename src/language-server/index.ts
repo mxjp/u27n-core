@@ -10,6 +10,7 @@ import { Diagnostic, DiagnosticLocation, DiagnosticSeverity, getDiagnosticLocati
 import { getPluralInfo } from "../plural-info.js";
 import { Source } from "../source.js";
 import { TranslationData } from "../translation-data.js";
+import { debounce } from "../utility/debounce.js";
 import { NodeFileSystem } from "../utility/file-system-node.js";
 import type { LocaleInfo, Options, ProjectInfo, SetTranslationRequest } from "./types.js";
 
@@ -18,6 +19,7 @@ const documents = new lsp.TextDocuments(TextDocument);
 const fileSystem = new NodeFileSystem();
 
 let project: Project | null = null;
+let backupPendingChanges: (() => void) | null = null;
 
 const LSP_SEVERITY: Record<DiagnosticSeverity, lsp.DiagnosticSeverity | null> = {
 	ignore: null,
@@ -46,6 +48,16 @@ connection.onInitialize(async params => {
 		fileSystem,
 	});
 
+	if (options.pendingChanges) {
+		project.dataProcessor.importPendingChanges(options.pendingChanges);
+	}
+
+	if (options.backupPendingChanges !== undefined) {
+		backupPendingChanges = debounce(options.backupPendingChanges, () => {
+			connection.sendNotification("u27n/backup-pending-changes", project!.dataProcessor.exportPendingChanges());
+		});
+	}
+
 	connection.onRequest("u27n/get-project-info", (): ProjectInfo => {
 		function getLocaleInfo(locale: string): LocaleInfo {
 			return {
@@ -66,17 +78,20 @@ connection.onInitialize(async params => {
 
 	connection.onRequest("u27n/set-translation", (req: SetTranslationRequest) => {
 		project!.dataProcessor.setTranslation(req.fragmentId, req.locale, req.value);
+		backupPendingChanges?.();
 	});
 
 	connection.onRequest("u27n/save-changes", async () => {
 		const data = project!.dataProcessor.applyPendingChanges();
 		await fileSystem.writeFile(config.translationData.filename, TranslationData.formatJson(data, config.translationData.sorted));
 		project!.dataProcessor.discardPendingChanges();
+		backupPendingChanges?.();
 		connection.sendNotification("u27n/project-update", {});
 	});
 
 	connection.onRequest("u27n/discard-changes", () => {
 		project!.dataProcessor.discardPendingChanges();
+		backupPendingChanges?.();
 		connection.sendNotification("u27n/project-update", {});
 	});
 

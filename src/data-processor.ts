@@ -122,6 +122,44 @@ export class DataProcessor {
 	}
 
 	/**
+	 * Export all pending changes in this data processor as a json serializable object.
+	 */
+	public exportPendingChanges(): DataProcessor.PendingChanges {
+		const changes: DataProcessor.PendingChanges = {
+			translations: {},
+		};
+		this.#pendingTranslationChanges.forEach((map, fragmentId) => {
+			const translations: Record<string, TranslationData.Translation> = {};
+			map.forEach((translation, locale) => {
+				translations[locale] = translation;
+			});
+			changes.translations[fragmentId] = translations;
+		});
+		return changes;
+	}
+
+	/**
+	 * Import pending changes.
+	 *
+	 * Changes that are already in place will not be overwritten.
+	 */
+	public importPendingChanges(changes: DataProcessor.PendingChanges): void {
+		for (const fragmentId in changes.translations) {
+			const translations = changes.translations[fragmentId];
+			const map = this.#pendingTranslationChanges.get(fragmentId);
+			if (map === undefined) {
+				this.#pendingTranslationChanges.set(fragmentId, new Map(Object.entries(translations)));
+			} else {
+				for (const locale in translations) {
+					if (!map.has(locale)) {
+						map.set(locale, translations[locale]);
+					}
+				}
+			}
+		}
+	}
+
+	/**
 	 * Get an array of all fragments for a specific source that are in sync.
 	 *
 	 * @returns The array of editable fragments or undefined if the source does not exist.
@@ -487,5 +525,9 @@ export declare namespace DataProcessor {
 		end: number;
 		endPos: Position | null;
 		editedLocales: string[];
+	}
+
+	export interface PendingChanges {
+		translations: Record<string, Record<string, TranslationData.Translation>>;
 	}
 }
