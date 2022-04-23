@@ -71,6 +71,7 @@ connection.onInitialize(async params => {
 	connection.onRequest("u27n/save-changes", async () => {
 		const data = project!.dataProcessor.applyPendingChanges();
 		await fileSystem.writeFile(config.translationData.filename, TranslationData.formatJson(data, config.translationData.sorted));
+		project!.dataProcessor.discardPendingChanges();
 	});
 
 	connection.onRequest("u27n/discard-changes", () => {
