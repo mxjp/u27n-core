@@ -96,9 +96,13 @@ export class NodeFileSystem implements FileSystem {
 			}, options.delay);
 		}
 
+		const overwriteMatchers = options.patterns.map(pattern => createMatcher(pattern));
 		const overwriteHandler = (filename: string) => {
-			updated.add(filename);
-			handleChanges();
+			const rel = relative(options.cwd, filename);
+			if (overwriteMatchers.some(matcher => matcher(rel))) {
+				updated.add(filename);
+				handleChanges();
+			}
 		};
 		this.#overwriteHandlers.add(overwriteHandler);
 
