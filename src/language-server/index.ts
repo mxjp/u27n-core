@@ -95,6 +95,8 @@ connection.onInitialize(async params => {
 		connection.sendNotification("u27n/project-update", {});
 	});
 
+	let previousDiagnosticFileUris: string[] = [];
+
 	project.watch({
 		delay: options.watchDelay ?? 100,
 		output: false,
@@ -145,13 +147,22 @@ connection.onInitialize(async params => {
 				}
 			});
 
+			const clearDiagnosticFileUris = new Set(previousDiagnosticFileUris);
+			previousDiagnosticFileUris = [];
+
 			lspDiagnostics.forEach((diagnostics, sourceId) => {
-				connection.sendDiagnostics({
-					uri: pathToFileURL(sourceId === null
-						? options.configFilename
-						: Source.sourceIdToFilename(config.context, sourceId)).toString(),
-					diagnostics,
-				});
+				const uri = pathToFileURL(sourceId === null
+					? options.configFilename
+					: Source.sourceIdToFilename(config.context, sourceId)).toString();
+
+				clearDiagnosticFileUris.delete(uri);
+				previousDiagnosticFileUris.push(uri);
+
+				connection.sendDiagnostics({ uri, diagnostics });
+			});
+
+			clearDiagnosticFileUris.forEach(uri => {
+				connection.sendDiagnostics({ uri, diagnostics: [] });
 			});
 
 			connection.sendNotification("u27n/project-update", {});
