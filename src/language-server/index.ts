@@ -37,145 +37,149 @@ documents.onDidClose(event => {
 });
 
 connection.onInitialize(async params => {
-	const options = params.initializationOptions as Options;
-	connection.console.info(`Using options: ${inspect(options, false, 99, false)}`);
+	try {
+		const options = params.initializationOptions as Options;
+		connection.console.info(`Using options: ${inspect(options, false, 99, false)}`);
 
-	const config = await Config.read(options.configFilename);
-	connection.console.info(`Using config: ${inspect(config, false, 99, false)}`);
+		const config = await Config.read(options.configFilename);
+		connection.console.info(`Using config: ${inspect(config, false, 99, false)}`);
 
-	project = await Project.create({
-		config,
-		fileSystem,
-	});
-
-	if (options.pendingChanges) {
-		project.dataProcessor.importPendingChanges(options.pendingChanges);
-	}
-
-	if (options.backupPendingChanges !== undefined) {
-		backupPendingChanges = debounce(options.backupPendingChanges, () => {
-			connection.sendNotification("u27n/backup-pending-changes", project!.dataProcessor.exportPendingChanges());
+		project = await Project.create({
+			config,
+			fileSystem,
 		});
-	}
 
-	connection.onRequest("u27n/get-project-info", (): ProjectInfo => {
-		function getLocaleInfo(locale: string): LocaleInfo {
-			return {
-				locale,
-				pluralInfo: getPluralInfo(locale),
-			};
+		if (options.pendingChanges) {
+			project.dataProcessor.importPendingChanges(options.pendingChanges);
 		}
-		return {
-			sourceLocale: getLocaleInfo(config.sourceLocale),
-			translatedLocales: config.translatedLocales.map(getLocaleInfo),
-		};
-	});
 
-	connection.onRequest("u27n/get-editable-fragments", (sourceFilename: string): DataProcessor.EditableFragment[] | null => {
-		const sourceId = Source.filenameToSourceId(project!.config.context, sourceFilename);
-		return project!.dataProcessor.getEditableFragments(sourceId) ?? null;
-	});
+		if (options.backupPendingChanges !== undefined) {
+			backupPendingChanges = debounce(options.backupPendingChanges, () => {
+				connection.sendNotification("u27n/backup-pending-changes", project!.dataProcessor.exportPendingChanges());
+			});
+		}
 
-	connection.onRequest("u27n/set-translation", (req: SetTranslationRequest) => {
-		project!.dataProcessor.setTranslation(req.fragmentId, req.locale, req.value);
-		backupPendingChanges?.();
-	});
-
-	connection.onRequest("u27n/save-changes", async () => {
-		const data = project!.dataProcessor.applyPendingChanges();
-		await fileSystem.writeFile(config.translationData.filename, TranslationData.formatJson(data, config.translationData.sorted));
-		project!.dataProcessor.discardPendingChanges();
-		backupPendingChanges?.();
-		connection.sendNotification("u27n/project-update", {});
-	});
-
-	connection.onRequest("u27n/discard-changes", () => {
-		project!.dataProcessor.discardPendingChanges();
-		backupPendingChanges?.();
-		connection.sendNotification("u27n/project-update", {});
-	});
-
-	let previousDiagnosticFileUris: string[] = [];
-
-	project.watch({
-		delay: options.watchDelay ?? 100,
-		output: false,
-		modify: false,
-		fragmentDiagnostics: true,
-
-		onDiagnostics: diagnostics => {
-			const lspDiagnostics = new Map<string | null, lsp.Diagnostic[]>();
-
-			function addDiagnostic(diagnostic: Diagnostic, location: DiagnosticLocation | null) {
-				const severity = LSP_SEVERITY[getDiagnosticSeverity(config.diagnostics, diagnostic.type)];
-				if (severity === null) {
-					return;
-				}
-
-				const lspDiagnostic: lsp.Diagnostic = {
-					message: getDiagnosticMessage(diagnostic),
-					source: "U27N",
-					severity,
-					range: location?.type === "fragment" && location.source
-						? {
-							start: location.source.lineMap.getPosition(location.start) ?? { line: 0, character: 0 },
-							end: location.source.lineMap.getPosition(location.end) ?? { line: 0, character: 0 },
-						}
-						: {
-							start: { line: 0, character: 0 },
-							end: { line: 0, character: 0 },
-						},
+		connection.onRequest("u27n/get-project-info", (): ProjectInfo => {
+			function getLocaleInfo(locale: string): LocaleInfo {
+				return {
+					locale,
+					pluralInfo: getPluralInfo(locale),
 				};
-
-				const sourceId = location?.sourceId ?? null;
-				const array = lspDiagnostics.get(sourceId);
-				if (array === undefined) {
-					lspDiagnostics.set(sourceId, [lspDiagnostic]);
-				} else {
-					array.push(lspDiagnostic);
-				}
 			}
+			return {
+				sourceLocale: getLocaleInfo(config.sourceLocale),
+				translatedLocales: config.translatedLocales.map(getLocaleInfo),
+			};
+		});
 
-			diagnostics.forEach(diagnostic => {
-				const locations = getDiagnosticLocations(config.context, project!.dataProcessor, diagnostic);
-				if (locations.length > 0) {
-					locations.forEach(location => {
-						addDiagnostic(diagnostic, location);
-					});
-				} else {
-					addDiagnostic(diagnostic, null);
-				}
-			});
+		connection.onRequest("u27n/get-editable-fragments", (sourceFilename: string): DataProcessor.EditableFragment[] | null => {
+			const sourceId = Source.filenameToSourceId(project!.config.context, sourceFilename);
+			return project!.dataProcessor.getEditableFragments(sourceId) ?? null;
+		});
 
-			const clearDiagnosticFileUris = new Set(previousDiagnosticFileUris);
-			previousDiagnosticFileUris = [];
+		connection.onRequest("u27n/set-translation", (req: SetTranslationRequest) => {
+			project!.dataProcessor.setTranslation(req.fragmentId, req.locale, req.value);
+			backupPendingChanges?.();
+		});
 
-			lspDiagnostics.forEach((diagnostics, sourceId) => {
-				const uri = pathToFileURL(sourceId === null
-					? options.configFilename
-					: Source.sourceIdToFilename(config.context, sourceId)).toString();
-
-				clearDiagnosticFileUris.delete(uri);
-				previousDiagnosticFileUris.push(uri);
-
-				connection.sendDiagnostics({ uri, diagnostics });
-			});
-
-			clearDiagnosticFileUris.forEach(uri => {
-				connection.sendDiagnostics({ uri, diagnostics: [] });
-			});
-
+		connection.onRequest("u27n/save-changes", async () => {
+			const data = project!.dataProcessor.applyPendingChanges();
+			await fileSystem.writeFile(config.translationData.filename, TranslationData.formatJson(data, config.translationData.sorted));
+			project!.dataProcessor.discardPendingChanges();
+			backupPendingChanges?.();
 			connection.sendNotification("u27n/project-update", {});
-		},
-	});
+		});
 
-	connection.console.info(`Watching project...`);
+		connection.onRequest("u27n/discard-changes", () => {
+			project!.dataProcessor.discardPendingChanges();
+			backupPendingChanges?.();
+			connection.sendNotification("u27n/project-update", {});
+		});
 
-	return {
-		capabilities: {
-			textDocumentSync: lsp.TextDocumentSyncKind.Incremental,
-		},
-	};
+		let previousDiagnosticFileUris: string[] = [];
+
+		project.watch({
+			delay: options.watchDelay ?? 100,
+			output: false,
+			modify: false,
+			fragmentDiagnostics: true,
+
+			onDiagnostics: diagnostics => {
+				const lspDiagnostics = new Map<string | null, lsp.Diagnostic[]>();
+
+				function addDiagnostic(diagnostic: Diagnostic, location: DiagnosticLocation | null) {
+					const severity = LSP_SEVERITY[getDiagnosticSeverity(config.diagnostics, diagnostic.type)];
+					if (severity === null) {
+						return;
+					}
+
+					const lspDiagnostic: lsp.Diagnostic = {
+						message: getDiagnosticMessage(diagnostic),
+						source: "U27N",
+						severity,
+						range: location?.type === "fragment" && location.source
+							? {
+								start: location.source.lineMap.getPosition(location.start) ?? { line: 0, character: 0 },
+								end: location.source.lineMap.getPosition(location.end) ?? { line: 0, character: 0 },
+							}
+							: {
+								start: { line: 0, character: 0 },
+								end: { line: 0, character: 0 },
+							},
+					};
+
+					const sourceId = location?.sourceId ?? null;
+					const array = lspDiagnostics.get(sourceId);
+					if (array === undefined) {
+						lspDiagnostics.set(sourceId, [lspDiagnostic]);
+					} else {
+						array.push(lspDiagnostic);
+					}
+				}
+
+				diagnostics.forEach(diagnostic => {
+					const locations = getDiagnosticLocations(config.context, project!.dataProcessor, diagnostic);
+					if (locations.length > 0) {
+						locations.forEach(location => {
+							addDiagnostic(diagnostic, location);
+						});
+					} else {
+						addDiagnostic(diagnostic, null);
+					}
+				});
+
+				const clearDiagnosticFileUris = new Set(previousDiagnosticFileUris);
+				previousDiagnosticFileUris = [];
+
+				lspDiagnostics.forEach((diagnostics, sourceId) => {
+					const uri = pathToFileURL(sourceId === null
+						? options.configFilename
+						: Source.sourceIdToFilename(config.context, sourceId)).toString();
+
+					clearDiagnosticFileUris.delete(uri);
+					previousDiagnosticFileUris.push(uri);
+
+					connection.sendDiagnostics({ uri, diagnostics });
+				});
+
+				clearDiagnosticFileUris.forEach(uri => {
+					connection.sendDiagnostics({ uri, diagnostics: [] });
+				});
+
+				connection.sendNotification("u27n/project-update", {});
+			},
+		});
+
+		connection.console.info(`Watching project...`);
+
+		return {
+			capabilities: {
+				textDocumentSync: lsp.TextDocumentSyncKind.Incremental,
+			},
+		};
+	} catch (error) {
+		throw new Error(inspect(error, false, 99, false));
+	}
 });
 
 documents.listen(connection);
