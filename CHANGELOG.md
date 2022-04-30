@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.10
++ Language server:
+  + Backup and restore pending changes.
+  + Emit project update when changes are saved or discarded.
+  + Fix residual file diagnostics.
+  + Ignore file system overwrites that are out of scope.
+
+## 1.9
++ Add language server translation data editing capability.
+
+## 1.8
++ Add u27n language server.
+
 ## 1.7
 + Add file system watcher delays.
 + Add config option to control obsolete fragment discarding.
