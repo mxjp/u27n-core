@@ -25,29 +25,44 @@ export class U27N {
 		return this.#locale;
 	}
 
-	public async setLocale(code: string, refresh = false): Promise<void> {
-		let locale = refresh ? undefined : this.#locales.get(code);
-		if (locale === undefined) {
-			locale = this.#localeFactory(this, code);
-			this.#locales.set(code, locale);
+	public async setLocale(code: string): Promise<void> {
+		const locale = this.ensureLocale(code);
 
-			const tasks: Promise<void>[] = [];
-			this.clients.forEach(client => {
-				tasks.push(client.fetchResources(this, locale!));
-			});
-			await Promise.all(tasks);
-
-			this.#locale = locale;
-			this.update();
+		const tasks: Promise<void>[] = [];
+		this.clients.forEach(client => {
+			tasks.push(client.fetchResources(this, locale));
+		});
+		const results = await Promise.allSettled(tasks);
+		for (let i = 0; i < results.length; i++) {
+			const result = results[i];
+			if (result.status === "rejected") {
+				throw result.reason;
+			}
 		}
+
+		this.#locale = locale;
+		this.update();
 	}
 
-	public setLocaleAuto(locales: string[], update = false): Promise<void> {
+	public setLocaleAuto(locales: string[]): Promise<void> {
 		if (locales.length === 0) {
 			throw new TypeError("at least one locale must be specified");
 		}
 		const code = U27N.detectLocale(locales) ?? locales[0];
-		return this.setLocale(code, update);
+		return this.setLocale(code);
+	}
+
+	public ensureLocale(code: string): Locale {
+		let locale = this.#locales.get(code);
+		if (locale === undefined) {
+			locale = this.#localeFactory(this, code);
+			this.#locales.set(code, locale);
+		}
+		return locale;
+	}
+
+	public getLocale(code: string): Locale | undefined {
+		return this.#locales.get(code);
 	}
 
 	public update(): void {
