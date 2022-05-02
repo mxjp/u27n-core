@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.11
++ Add `FetchClient` cache.
++ Fix `Controller.setLocale` and `.setLocaleAuto` behavior.
+
 ## 1.10
 + Language server:
   + Backup and restore pending changes.
