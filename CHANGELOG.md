@@ -3,6 +3,7 @@
 ## 1.11
 + Add `FetchClient` cache.
 + Fix `Controller.setLocale` and `.setLocaleAuto` behavior.
++ Discard all obsolete fragments by default.
 
 ## 1.10
 + Language server:
