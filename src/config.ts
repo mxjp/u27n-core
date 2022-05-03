@@ -137,7 +137,7 @@ export namespace Config {
 			plugins.push({ entry, config });
 		}
 
-		const obsoleteDiscard = json.obsolete?.discard ?? DiscardObsoleteFragmentType.Outdated;
+		const obsoleteDiscard = json.obsolete?.discard ?? DiscardObsoleteFragmentType.All;
 		if (!discardObsoleteFragmentTypes.has(obsoleteDiscard)) {
 			throw new TypeError(`obsolete.discard must be one of ${JSON.stringify(Array.from(discardObsoleteFragmentTypes))}.`);
 		}
