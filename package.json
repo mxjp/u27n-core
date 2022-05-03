@@ -2,6 +2,16 @@
 	"name": "@u27n/core",
 	"version": "1.11.1",
 	"description": "Universal localization framework",
+	"keywords": [
+		"u27n",
+		"i18n",
+		"internationalization",
+		"l10n",
+		"localization",
+		"g11n",
+		"globalization",
+		"translation"
+	],
 	"author": "Max J. Polster",
 	"license": "MIT",
 	"repository": "https://github.com/mxjp/u27n-core.git",
