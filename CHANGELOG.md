@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.12
++ Project onDiagnostics handler can now return a promise.
+
 ## 1.11
 + Add `FetchClient` cache.
 + Fix `Controller.setLocale` and `.setLocaleAuto` behavior.

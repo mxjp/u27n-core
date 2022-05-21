@@ -99,7 +99,7 @@ export class Project {
 					await this.#generateOutput();
 				}
 
-				options.onDiagnostics?.(diagnostics);
+				await options.onDiagnostics?.(diagnostics);
 			},
 		});
 	}
@@ -217,7 +217,7 @@ export declare namespace Project {
 		output: boolean;
 		modify: boolean;
 		fragmentDiagnostics: boolean;
-		onDiagnostics?: (diagnostics: Diagnostic[]) => void;
+		onDiagnostics?: (diagnostics: Diagnostic[]) => void | Promise<void>;
 		onError?: (error: unknown) => void;
 	}
 
