@@ -4,6 +4,7 @@ import { join, resolve } from "path";
 
 import { Config } from "../src/config.js";
 import { Diagnostic, getDiagnosticMessage } from "../src/diagnostics.js";
+import { Manifest } from "../src/manifest.js";
 import { LocaleData } from "../src/runtime/index.js";
 import { TranslationData } from "../src/translation-data.js";
 import { exec, execStart } from "./_utility/exec.js";
@@ -38,6 +39,7 @@ function configFile(overwrite?: Partial<Config.Json>): Record<string, string> {
 			output: {
 				filename: "./locale/[locale].json",
 				includeOutdated: false,
+				manifestPath: ".",
 				...overwrite?.output,
 			},
 			...overwrite,
@@ -65,6 +67,10 @@ async function readLocaleData(cwd: string, path = "locale"): Promise<Map<string,
 		}
 	}
 	return data;
+}
+
+async function readManifest(cwd: string, path = "."): Promise<Manifest> {
+	return Manifest.parse(await readFile(join(cwd, path, Manifest.NAME), "utf-8"));
 }
 
 function hasDiagnostic(output: string, diagnostic: Diagnostic): boolean {
@@ -115,6 +121,19 @@ test("sync project", async t => {
 		}],
 		["en", {}],
 	]));
+
+	t.deepEqual(await readManifest(cwd), {
+		version: 1,
+		locales: {
+			en: "locale/en.json",
+			de: "locale/de.json",
+		},
+		files: {
+			"src/foo.txt.out": {
+				fragmentIds: ["0"],
+			},
+		},
+	});
 });
 
 test("out of sync project", async t => {
@@ -147,6 +166,19 @@ test("out of sync project", async t => {
 		["de", {}],
 		["en", {}],
 	]));
+
+	t.deepEqual(await readManifest(cwd), {
+		version: 1,
+		locales: {
+			en: "locale/en.json",
+			de: "locale/de.json",
+		},
+		files: {
+			"src/foo.txt.out": {
+				fragmentIds: ["0"],
+			},
+		},
+	});
 });
 
 test("watch project", async t => {

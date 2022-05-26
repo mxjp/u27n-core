@@ -7,7 +7,9 @@ export class TestPlugin implements Plugin {
 
 	public createSource(filename: string, content: string): TestSource | undefined {
 		if (/\.txt$/.test(filename)) {
-			return new TestSource(content);
+			return new TestSource(content).withOutputFilenames([
+				filename + ".out",
+			]);
 		}
 	}
 }

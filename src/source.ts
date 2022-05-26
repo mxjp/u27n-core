@@ -29,6 +29,15 @@ export class Source<F extends Source.Fragment = Source.Fragment> {
 	public update?(context: Source.UpdateContext): Source.UpdateResult;
 
 	/**
+	 * Get an array of filenames that this source is compiled to.
+	 *
+	 * If this is not implemented or returns an empty array,
+	 * fragment ids from this source are added to the
+	 * manifest as global fragments.
+	 */
+	public getOutputFilenames?(): string[];
+
+	/**
 	 * A line map for this source that can be used
 	 * for converting between line/character positions and offsets.
 	 */
@@ -70,7 +79,7 @@ export class Source<F extends Source.Fragment = Source.Fragment> {
 	}
 
 	/**
-	 * Convert an absolute filename to a relative source filename that can be used in a translation data object.
+	 * Convert an absolute or relative filename to a relative source filename that can be used in a translation data object.
 	 *
 	 * @param rootDir The absolute path of the project root directory.
 	 * @param filename The absolute or relative filename of the source.

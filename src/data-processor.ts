@@ -2,6 +2,7 @@ import { Position } from "@mpt/line-map";
 
 import { Diagnostic } from "./diagnostics.js";
 import { Base62FragmentIdGenerator, FragmentIdGenerator } from "./fragment-id-generator.js";
+import { Manifest } from "./manifest.js";
 import { DiscardObsoleteFragmentType } from "./obsolete-handling.js";
 import { getPluralInfo } from "./plural-info.js";
 import { LocaleData } from "./runtime/locale-data.js";
@@ -476,6 +477,53 @@ export class DataProcessor {
 
 		return data;
 	}
+
+	public generateManifest(options: DataProcessor.GenerateManifestOptions): Manifest {
+		const manifest: Manifest = {
+			version: 1,
+			locales: {},
+			files: {},
+		};
+
+		options.localeDataFilenames.forEach((filename, locale) => {
+			manifest.locales[locale] = Manifest.filenameToFileId(options.manifestFilename, filename);
+		});
+
+		const files = new Map<string, {
+			fragmentIds: Set<string>;
+		}>();
+
+		this.#sources.forEach(source => {
+			const filenames = source.getOutputFilenames?.();
+
+			const fileIds = (filenames === undefined || filenames.length === 0)
+				? [Manifest.GLOBAL_FILE_ID]
+				: filenames.map(filename => Manifest.filenameToFileId(options.manifestFilename!, filename));
+
+			for (const fileId of fileIds) {
+				let info = files.get(fileId);
+				if (info === undefined) {
+					info = {
+						fragmentIds: new Set(),
+					};
+					files.set(fileId, info);
+				}
+				source.fragments.forEach(fragment => {
+					if (fragment.fragmentId !== undefined) {
+						info!.fragmentIds.add(fragment.fragmentId);
+					}
+				});
+			}
+		});
+
+		files.forEach((info, fileId) => {
+			manifest.files[fileId] = {
+				fragmentIds: Array.from(info.fragmentIds),
+			};
+		});
+
+		return manifest;
+	}
 }
 
 export declare namespace DataProcessor {
@@ -529,5 +577,12 @@ export declare namespace DataProcessor {
 
 	export interface PendingChanges {
 		translations: Record<string, Record<string, TranslationData.Translation>>;
+	}
+
+	export interface GenerateManifestOptions {
+		/** The absolute manifest filename. */
+		manifestFilename: string;
+		/** Map of locale codes to absolute output locale data filenames. */
+		localeDataFilenames: Map<string, string>;
 	}
 }

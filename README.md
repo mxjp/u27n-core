@@ -81,7 +81,12 @@ The configuration is stored in a file called **u27n.json**:
 
     // Optional. If true, outdated translations are not
     // included in the locale bundles.
-    "includeOutdated": false
+    "includeOutdated": false,
+
+    // Optional. The directory where to store the output manifest.
+    //
+    // If this is set to null, no output manifest is written.
+    "manifestPath": "./dist",
   },
 
   // Optional. An object to configure diagnostic severity:

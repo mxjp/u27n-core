@@ -1,6 +1,7 @@
 import { Config } from "./config.js";
 import { DataProcessor } from "./data-processor.js";
 import { Diagnostic } from "./index.js";
+import { Manifest } from "./manifest.js";
 import { Plugin, PluginContext, PluginModule, PluginSetupContext } from "./plugin.js";
 import { Source } from "./source.js";
 import { TranslationData } from "./translation-data.js";
@@ -162,6 +163,9 @@ export class Project {
 	}
 
 	async #generateOutput(): Promise<void> {
+		const manifestFilename = this.config.output.manifestFilename;
+		const localeDataFilenames = new Map<string, string>();
+
 		if (this.config.output.filename) {
 			const data = this.dataProcessor.generateLocaleData({
 				namespace: this.config.namespace,
@@ -173,7 +177,16 @@ export class Project {
 			for (const [locale, localeData] of data) {
 				const filename = Config.getOutputFilename(this.config.output.filename, locale);
 				await this.fileSystem.writeFile(filename, JSON.stringify(localeData));
+				localeDataFilenames.set(locale, filename);
 			}
+		}
+
+		if (manifestFilename) {
+			const manifest = this.dataProcessor.generateManifest({
+				manifestFilename,
+				localeDataFilenames,
+			});
+			await this.fileSystem.writeFile(manifestFilename, Manifest.stringify(manifest));
 		}
 	}
 

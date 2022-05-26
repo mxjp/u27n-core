@@ -787,7 +787,7 @@ test(`${DataProcessor.prototype.getFragmentDiagnostics.name} (unsupported locale
 	]);
 });
 
-test(`${DataProcessor.prototype.generateLocaleData.name}`, t => {
+test(`${DataProcessor.prototype.generateLocaleData.name}, ${DataProcessor.prototype.generateManifest.name}`, t => {
 	const processor = new DataProcessor();
 	const modified = new Date().toISOString();
 
@@ -850,6 +850,15 @@ test(`${DataProcessor.prototype.generateLocaleData.name}`, t => {
 				baz id=2
 				test id=3
 				# test id=5
+			`).withOutputFilenames(["/test/dist/a.js"])],
+			["b1", new TestSource(`
+				unlocalized id=7
+			`).withOutputFilenames(["/test/dist/b.js"])],
+			["b2", new TestSource(`
+				unlocalized id=8
+			`).withOutputFilenames(["/test/dist/b.js"])],
+			["c", new TestSource(`
+				global id=9
 			`)],
 		]),
 		modify: false,
@@ -885,4 +894,29 @@ test(`${DataProcessor.prototype.generateLocaleData.name}`, t => {
 		}],
 		["zh", {}],
 	]));
+
+	t.deepEqual(processor.generateManifest({
+		localeDataFilenames: new Map([
+			["en", "/test/dist/en.json"],
+			["de", "/test\\dist/hashed/de.1234.json"],
+		]),
+		manifestFilename: "/test/dist/manifest.json",
+	}), {
+		version: 1,
+		locales: {
+			en: "en.json",
+			de: "hashed/de.1234.json",
+		},
+		files: {
+			"": {
+				fragmentIds: ["9"],
+			},
+			"a.js": {
+				fragmentIds: ["0", "1", "2", "3", "5"],
+			},
+			"b.js": {
+				fragmentIds: ["7", "8"],
+			},
+		},
+	});
 });

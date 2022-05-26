@@ -2,6 +2,7 @@
 
 ## 1.12
 + Project onDiagnostics handler can now return a promise.
++ Add output manifest generation.
 
 ## 1.11
 + Add `FetchClient` cache.

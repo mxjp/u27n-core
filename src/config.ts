@@ -3,6 +3,7 @@ import { dirname, normalize, resolve } from "path";
 import resolveModule from "resolve";
 
 import { DiagnosticSeverityConfig, DiagnosticType, diagnosticTypes } from "./diagnostics.js";
+import { Manifest } from "./manifest.js";
 import { DiscardObsoleteFragmentType, discardObsoleteFragmentTypes } from "./obsolete-handling.js";
 
 export interface Config {
@@ -61,11 +62,13 @@ export namespace Config {
 	export interface OutputJson {
 		filename?: string | null;
 		includeOutdated?: boolean;
+		manifestPath?: string | null;
 	}
 
 	export interface Output {
 		filename: string | null;
 		includeOutdated: boolean;
+		manifestFilename: string | null;
 	}
 
 	export function getOutputFilename(filenameTemplate: string, locale: string): string {
@@ -148,6 +151,12 @@ export namespace Config {
 		}
 		const outputFilename = rawOutputFilename ? resolve(context, rawOutputFilename) : null;
 
+		const rawOutputManifestPath = json.output?.manifestPath ?? "./dist";
+		if (rawOutputManifestPath !== null && typeof rawOutputManifestPath !== "string") {
+			throw new TypeError("output.manifestFilename must be a string.");
+		}
+		const outputManifestFilename = rawOutputManifestPath ? resolve(context, rawOutputManifestPath, Manifest.NAME) : null;
+
 		const outputIncludeOutdated = json.output?.includeOutdated ?? false;
 		if (typeof outputIncludeOutdated !== "boolean") {
 			throw new TypeError("output.includeOutdated must be a boolean.");
@@ -180,6 +189,7 @@ export namespace Config {
 			output: {
 				filename: outputFilename,
 				includeOutdated: outputIncludeOutdated,
+				manifestFilename: outputManifestFilename,
 			},
 			diagnostics,
 		};

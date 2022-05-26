@@ -47,6 +47,11 @@ export class TestSource extends Source {
 		}
 	}
 
+	public withOutputFilenames(outputFilenames: string[]): TestSource {
+		this.getOutputFilenames = () => outputFilenames;
+		return this;
+	}
+
 	protected parse(): Source.Fragment[] {
 		const fragments: Source.Fragment[] = [];
 
