@@ -898,7 +898,7 @@ test(`${DataProcessor.prototype.generateLocaleData.name}, ${DataProcessor.protot
 	t.deepEqual(processor.generateManifest({
 		localeDataFilenames: new Map([
 			["en", "/test/dist/en.json"],
-			["de", "/test\\dist/hashed/de.1234.json"],
+			["de", "/test/dist/hashed/de.1234.json"],
 		]),
 		manifestFilename: "/test/dist/manifest.json",
 	}), {
