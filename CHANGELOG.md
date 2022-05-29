@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.13
++ Add customizable defaults to config parser.
+
 ## 1.12
 + Project onDiagnostics handler can now return a promise.
 + Add output manifest generation.

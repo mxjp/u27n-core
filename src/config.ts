@@ -71,32 +71,67 @@ export namespace Config {
 		manifestFilename: string | null;
 	}
 
+	export interface Defaults {
+		translationDataFilename: string;
+		translationDataSorted: boolean;
+		namespace: string;
+		include: string[];
+		locales: string[];
+		obsoleteDiscard: DiscardObsoleteFragmentType;
+		outputFilename: string;
+		outputIncludeOutdated: boolean;
+		outputManifestPath: string;
+		diagnostics: DiagnosticSeverityConfig;
+	}
+
+	export const DEFAULTS: Defaults = {
+		translationDataFilename: "./u27n-data.json",
+		translationDataSorted: true,
+		namespace: "",
+		include: ["./src/**/*"],
+		locales: ["en"],
+		obsoleteDiscard: DiscardObsoleteFragmentType.All,
+		outputFilename: "./dist/locale/[locale].json",
+		outputIncludeOutdated: false,
+		outputManifestPath: "./dist",
+		diagnostics: {},
+	};
+
 	export function getOutputFilename(filenameTemplate: string, locale: string): string {
 		return filenameTemplate.replace(/\[locale\]/g, locale);
 	}
 
-	export async function read(filename: string): Promise<Config> {
-		return fromJson(JSON.parse(await readFile(filename, "utf-8")) as Json, dirname(filename));
+	export async function read(filename: string, defaults?: Partial<Defaults>): Promise<Config> {
+		return fromJson(JSON.parse(await readFile(filename, "utf-8")) as Json, dirname(filename), defaults);
 	}
 
-	export async function fromJson(json: Json, context: string): Promise<Config> {
-		const translationDataFilename = resolve(context, json.translationData?.filename ?? "./u27n-data.json");
-		const translationDataSorted = json.translationData?.sorted ?? true;
+	function clone<T>(value: T) {
+		return JSON.parse(JSON.stringify(value)) as T;
+	}
+
+	export async function fromJson(json: Json, context: string, defaults?: Partial<Defaults>): Promise<Config> {
+		const allDefaults = {
+			...DEFAULTS,
+			...defaults,
+		};
+
+		const translationDataFilename = resolve(context, json.translationData?.filename ?? allDefaults.translationDataFilename);
+		const translationDataSorted = json.translationData?.sorted ?? allDefaults.translationDataSorted;
 		if (typeof translationDataSorted !== "boolean") {
 			throw new TypeError("translationData.sorted must be a boolean.");
 		}
 
-		const namespace = json.namespace ?? "";
+		const namespace = json.namespace ?? allDefaults.namespace;
 		if (typeof namespace !== "string") {
 			throw new TypeError("namespace must be a string.");
 		}
 
-		const include = json.include ?? ["./src/**/*"];
+		const include = json.include ?? clone(allDefaults.include);
 		if (!Array.isArray(include) || include.some(s => typeof s !== "string")) {
 			throw new TypeError("include must be an array of strings.");
 		}
 
-		const locales = json.locales ?? ["en"];
+		const locales = json.locales ?? clone(allDefaults.locales);
 		if (!Array.isArray(locales) || locales.some(s => typeof s !== "string")) {
 			throw new TypeError("locales must be an array of strings.");
 		}
@@ -140,29 +175,29 @@ export namespace Config {
 			plugins.push({ entry, config });
 		}
 
-		const obsoleteDiscard = json.obsolete?.discard ?? DiscardObsoleteFragmentType.All;
+		const obsoleteDiscard = json.obsolete?.discard ?? allDefaults.obsoleteDiscard;
 		if (!discardObsoleteFragmentTypes.has(obsoleteDiscard)) {
 			throw new TypeError(`obsolete.discard must be one of ${JSON.stringify(Array.from(discardObsoleteFragmentTypes))}.`);
 		}
 
-		const rawOutputFilename = json.output?.filename ?? "./dist/locale/[locale].json";
+		const rawOutputFilename = json.output?.filename ?? allDefaults.outputFilename;
 		if (rawOutputFilename !== null && typeof rawOutputFilename !== "string") {
 			throw new TypeError("output.filename must be a string.");
 		}
 		const outputFilename = rawOutputFilename ? resolve(context, rawOutputFilename) : null;
 
-		const rawOutputManifestPath = json.output?.manifestPath ?? "./dist";
+		const rawOutputManifestPath = json.output?.manifestPath ?? allDefaults.outputManifestPath;
 		if (rawOutputManifestPath !== null && typeof rawOutputManifestPath !== "string") {
 			throw new TypeError("output.manifestFilename must be a string.");
 		}
 		const outputManifestFilename = rawOutputManifestPath ? resolve(context, rawOutputManifestPath, Manifest.NAME) : null;
 
-		const outputIncludeOutdated = json.output?.includeOutdated ?? false;
+		const outputIncludeOutdated = json.output?.includeOutdated ?? allDefaults.outputIncludeOutdated;
 		if (typeof outputIncludeOutdated !== "boolean") {
 			throw new TypeError("output.includeOutdated must be a boolean.");
 		}
 
-		const diagnostics = json.diagnostics ?? {};
+		const diagnostics = json.diagnostics ?? clone(allDefaults.diagnostics);
 		if (typeof diagnostics !== "object" || diagnostics === null || Array.isArray(diagnostics)) {
 			throw new TypeError(`diagnostics must be an object.`);
 		}
