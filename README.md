@@ -16,6 +16,7 @@ U27N is a _universal internationalization_ framework that aims to provide an end
 
 ## Packages
 + [@u27n/typescript](https://www.npmjs.com/package/@u27n/typescript) - Plugin for handling typescript and javascript source code.
++ [@u27n/webpack](https://www.npmjs.com/package/@u27n/webpack) - Webpack plugin and runtime.
 + [@u27n/vscode](https://marketplace.visualstudio.com/items?itemName=mxjp.u27n) - VSCode extension for diagnostics and translation editing.
 
 <br>
