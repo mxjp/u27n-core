@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.14
++ Add `onFinish` project watch option.
++ Deprecate `onDiagnostics` project watch option.
+
 ## 1.13
 + Add customizable defaults to config parser.
 
