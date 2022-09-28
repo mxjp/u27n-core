@@ -153,6 +153,7 @@ export namespace Config {
 				config = {};
 			} else if (typeof pluginJson === "object" && pluginJson !== null && !Array.isArray(pluginJson)) {
 				entry = pluginJson.entry;
+				config = pluginJson.config ?? {};
 				if (typeof entry !== "string") {
 					throw new TypeError(`plugins[${i}].entry must be a string`);
 				}
