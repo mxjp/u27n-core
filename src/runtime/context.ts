@@ -50,6 +50,8 @@ export class Context {
 }
 
 export declare namespace Context {
+	export type T = typeof Context.prototype.t;
+
 	export interface TPluralOptions {
 		count: number;
 	}
