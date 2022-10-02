@@ -13,6 +13,7 @@ U27N is a _universal internationalization_ framework that aims to provide an end
   + [Text Fragments](#text-fragments)
     + [Interpolation & Formatting](#interpolation--formatting)
     + [Pluralization](#pluralization)
+  + [Concurrent Locales](#concurrent-locales)
 
 ## Packages
 + [@u27n/typescript](https://www.npmjs.com/package/@u27n/typescript) - Plugin for handling typescript and javascript source code.
@@ -134,7 +135,7 @@ npx u27n
 # Runtime API
 
 ## Controller
-Usually, there is one controller per application that loads and manages locale data.
+Usually, there is one controller per web application that loads and manages locale data.
 ```ts
 import { U27N, FetchClient, defaultLocaleFactory } from "@u27n/core/runtime";
 
@@ -213,4 +214,37 @@ t(["apple", "apples"], { count: 42 });
 Interpolation and formatting can also be used in plural values:
 ```ts
 t(["{count} apple", "{count} apples"], { count: 42 });
+```
+
+## Concurrent Locales
+For things like server side rendering, it may be necessary to switch between locales depending on external factors e.g. which user makes a request. For this purpose, it is recommended to use multiple controllers in parallel and pass the translation function for the correct locale to the part of the application that needs to be translated:
+```tsx
+async function createLocale(locale) {
+  const u27n = new U27N({
+    clients: [
+      new FetchClient("/locale/[locale].json"),
+    ],
+    localeFactory: defaultLocaleFactory,
+  });
+  await u27n.setLocale(locale);
+  const context = new Context(u27n, "example", "en");
+  return context.t;
+}
+
+// The following code shows how this setup could be used:
+
+const locales = {
+  en: await createLocale("en"),
+  de: await createLocale("de"),
+};
+
+function renderPage(t) {
+  return <Page>
+    <h1>{t("Hello World!", "42")}</h1>
+  </Page>;
+}
+
+server.onRequest(user => {
+  return renderPage(locales[user.locale] ?? locales.en);
+});
 ```
