@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.15 (unreleased)
++ Add stable `Context.T` type for translation functions.
+
 ## 1.14
 + Add `onFinish` project watch option.
 + Deprecate `onDiagnostics` project watch option.
