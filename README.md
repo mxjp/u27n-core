@@ -71,7 +71,7 @@ The configuration is stored in a file called **u27n.json**:
     // + "outdated": Discard obsolete fragments that
     //               have no or only outdated translations.
     // + "all": Discard all obsolete fragments.
-    "discard": "outdated"
+    "discard": "all"
   },
 
   "output": {
