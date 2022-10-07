@@ -140,40 +140,42 @@ export namespace Config {
 		}
 
 		const plugins: Plugin[] = [];
-		if (!Array.isArray(json.plugins)) {
-			throw new TypeError("plugins must be an array.");
-		}
-		for (let i = 0; i < json.plugins.length; i++) {
-			let entry: string;
-			let config: unknown;
-
-			const pluginJson = json.plugins[i];
-			if (typeof pluginJson === "string") {
-				entry = pluginJson;
-				config = {};
-			} else if (typeof pluginJson === "object" && pluginJson !== null && !Array.isArray(pluginJson)) {
-				entry = pluginJson.entry;
-				config = pluginJson.config ?? {};
-				if (typeof entry !== "string") {
-					throw new TypeError(`plugins[${i}].entry must be a string`);
-				}
-			} else {
-				throw new TypeError(`plugins[${i}] must be a string or an object.`);
+		if (json.plugins) {
+			if (!Array.isArray(json.plugins)) {
+				throw new TypeError("plugins must be an array.");
 			}
-			// eslint-disable-next-line require-atomic-updates
-			entry = await new Promise<string>((resolve, reject) => {
-				resolveModule(entry, {
-					basedir: context,
-					includeCoreModules: false,
-				}, (error, entry) => {
-					if (error) {
-						reject(error);
-					} else {
-						resolve(normalize(entry!));
+			for (let i = 0; i < json.plugins.length; i++) {
+				let entry: string;
+				let config: unknown;
+
+				const pluginJson = json.plugins[i];
+				if (typeof pluginJson === "string") {
+					entry = pluginJson;
+					config = {};
+				} else if (typeof pluginJson === "object" && pluginJson !== null && !Array.isArray(pluginJson)) {
+					entry = pluginJson.entry;
+					config = pluginJson.config ?? {};
+					if (typeof entry !== "string") {
+						throw new TypeError(`plugins[${i}].entry must be a string`);
 					}
+				} else {
+					throw new TypeError(`plugins[${i}] must be a string or an object.`);
+				}
+				// eslint-disable-next-line require-atomic-updates
+				entry = await new Promise<string>((resolve, reject) => {
+					resolveModule(entry, {
+						basedir: context,
+						includeCoreModules: false,
+					}, (error, entry) => {
+						if (error) {
+							reject(error);
+						} else {
+							resolve(normalize(entry!));
+						}
+					});
 				});
-			});
-			plugins.push({ entry, config });
+				plugins.push({ entry, config });
+			}
 		}
 
 		const obsoleteDiscard = json.obsolete?.discard ?? allDefaults.obsoleteDiscard;
