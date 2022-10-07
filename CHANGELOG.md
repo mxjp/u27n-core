@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.15 (unreleased)
+## 1.15
 + Add stable `Context.T` type for translation functions.
 + Fix interpolation processor syntax errors on iOS mobile devices.
 + Fix broken config parser when no plugins are configured.
