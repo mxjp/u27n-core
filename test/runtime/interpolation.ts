@@ -61,7 +61,7 @@ test("format string escaping", interpolate, "{a, b, c\\,d \\}}", {}, "c,d }", ne
 	["b", (_value, _locale, format) => format!],
 ]));
 
-test("format string escaping (trailing whitespace)", interpolate, "{a, b,\\ c}", {}, " c", new Map([
+test("format string escaping (trailing whitespace)", interpolate, "{a, b,\\ c}", {}, "c", new Map([
 	["b", (_value, _locale, format) => format!],
 ]));
 

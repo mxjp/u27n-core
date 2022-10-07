@@ -2,6 +2,7 @@
 
 ## 1.15 (unreleased)
 + Add stable `Context.T` type for translation functions.
++ Fix interpolation processor syntax errors on iOS mobile devices.
 
 ## 1.14
 + Add `onFinish` project watch option.

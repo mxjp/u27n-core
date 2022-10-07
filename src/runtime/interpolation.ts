@@ -23,16 +23,27 @@ export function createInterpolationProcessor(controller: U27N): InterpolationPro
 				return escaped;
 			}
 
-			const parts = content.split(/(?<!\\),\s*/g);
-			if (parts.length < 1 || parts.length > 3) {
+			const parts: string[] = [""];
+			let start = 0;
+			for (let i = 0; i < content.length; i++) {
+				const char = content[i];
+				if (char === "\\") {
+					parts[parts.length - 1] += content.slice(start, i);
+					start = ++i;
+				} else if (char === ",") {
+					parts[parts.length - 1] += content.slice(start, i);
+					parts.push("");
+					start = i + 1;
+				}
+			}
+			parts[parts.length - 1] += content.slice(start);
+			if (parts.length > 3) {
 				throw new TypeError(`invalid interpolation: ${JSON.stringify(match)}`);
 			}
 
-			const [name, formatterKey] = parts;
-			let format = parts[2];
-			if (format !== undefined) {
-				format = format.replace(/\\([^])/g, "$1");
-			}
+			const name = parts[0].trim();
+			const formatterKey = parts[1]?.trim();
+			const format = parts[2]?.trim();
 
 			const value = hasOwnProperty.call(fields, name) ? fields[name] : undefined;
 
