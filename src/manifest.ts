@@ -1,4 +1,4 @@
-import { dirname, isAbsolute, join, normalize, relative } from "path";
+import { dirname, isAbsolute, join, normalize, relative } from "node:path";
 
 export interface Manifest {
 	/**

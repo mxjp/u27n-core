@@ -5,7 +5,7 @@ export class FetchClient implements U27N.Client {
 	readonly #url: string;
 	readonly #cache: Set<string> | null;
 
-	public constructor(options: string | FetchClient.Options) {
+	constructor(options: string | FetchClient.Options) {
 		if (typeof options === "string") {
 			options = {
 				url: options,
@@ -15,7 +15,7 @@ export class FetchClient implements U27N.Client {
 		this.#cache = (options.cache ?? true) ? new Set() : null;
 	}
 
-	public async fetchResources(_controller: U27N, locale: Locale): Promise<void> {
+	async fetchResources(_controller: U27N, locale: Locale): Promise<void> {
 		const url = this.#url.replace(/\[locale\]/g, locale.code);
 
 		if (this.#cache?.has(url)) {
@@ -31,14 +31,14 @@ export class FetchClient implements U27N.Client {
 		}
 	}
 
-	public clearCache(): void {
+	clearCache(): void {
 		this.#cache?.clear();
 	}
 }
 
 export namespace FetchClient {
 	export class RequestError extends Error {
-		public constructor(public readonly response: Response) {
+		constructor(readonly response: Response) {
 			super(`${response.status} ${response.statusText}`);
 		}
 	}

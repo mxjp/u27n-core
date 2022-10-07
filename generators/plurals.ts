@@ -1,8 +1,9 @@
 /* eslint-disable import/extensions */
-import { mkdir, readFile, writeFile } from "fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { join } from "node:path";
+
 import jsStringEscape from "js-string-escape";
 import JSON5 from "json5";
-import { join } from "path";
 
 import type { LocaleSet, PluralFormEqualsRule, PluralFormExcludeRule, PluralFormRangeRule, PluralFormRule } from "../resources/plurals";
 import { Conditions } from "./utility/conditions";

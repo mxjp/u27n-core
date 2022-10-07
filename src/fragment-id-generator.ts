@@ -17,7 +17,7 @@ export interface FragmentIdGenerator {
 export class Base62FragmentIdGenerator implements FragmentIdGenerator {
 	#next = 0;
 
-	public generate(): string {
+	generate(): string {
 		return base62encode(this.#next++);
 	}
 }

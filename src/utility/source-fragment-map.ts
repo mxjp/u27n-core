@@ -7,21 +7,21 @@ export class SourceFragmentMap {
 	/**
 	 * Get a view on the current mapping from source ids to sets of fragment ids.
 	 */
-	public get sourceToFragments(): ReadonlyMap<string, ReadonlySet<string>> {
+	get sourceToFragments(): ReadonlyMap<string, ReadonlySet<string>> {
 		return this.#sourceToFragments;
 	}
 
 	/**
 	 * Get a view on the current mapping from fragment ids to sets of source ids.
 	 */
-	public get fragmentToSources(): ReadonlyMap<string, ReadonlySet<string>> {
+	get fragmentToSources(): ReadonlyMap<string, ReadonlySet<string>> {
 		return this.#fragmentToSources;
 	}
 
 	/**
 	 * Update all fragments of the specified source.
 	 */
-	public updateSource(sourceId: string, fragmentMap: ReadonlyMap<string, Source.Fragment>): void {
+	updateSource(sourceId: string, fragmentMap: ReadonlyMap<string, Source.Fragment>): void {
 		let fragmentIds = this.#sourceToFragments.get(sourceId);
 		if (fragmentIds === undefined) {
 			if (fragmentMap.size > 0) {
@@ -56,7 +56,7 @@ export class SourceFragmentMap {
 	/**
 	 * Remove all fragments of the specified source.
 	 */
-	public removeSource(sourceId: string): void {
+	removeSource(sourceId: string): void {
 		this.#sourceToFragments.get(sourceId)?.forEach(fragmentId => {
 			deletePair(this.#fragmentToSources, fragmentId, sourceId);
 		});
@@ -66,7 +66,7 @@ export class SourceFragmentMap {
 	/**
 	 * Check if there are any sources other than the specified one that also provide the same fragment.
 	 */
-	public hasOtherSources(sourceId: string, fragmentId: string): boolean {
+	hasOtherSources(sourceId: string, fragmentId: string): boolean {
 		const sourceIds = this.#fragmentToSources.get(fragmentId);
 		return sourceIds !== undefined
 			&& sourceIds.size > (sourceIds.has(sourceId) ? 1 : 0);
@@ -75,7 +75,7 @@ export class SourceFragmentMap {
 	/**
 	 * Check if there are any fragments with the specified id.
 	 */
-	public hasFragment(fragmentId: string): boolean {
+	hasFragment(fragmentId: string): boolean {
 		return this.#fragmentToSources.has(fragmentId);
 	}
 }

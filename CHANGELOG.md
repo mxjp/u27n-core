@@ -4,6 +4,7 @@
 + Add stable `Context.T` type for translation functions.
 + Fix interpolation processor syntax errors on iOS mobile devices.
 + Fix broken config parser when no plugins are configured.
++ Drop support for nodejs 15 or lower.
 
 ## 1.14
 + Add `onFinish` project watch option.

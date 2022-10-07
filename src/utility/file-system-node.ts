@@ -1,8 +1,9 @@
+import { access, mkdir, readdir, readFile, writeFile } from "node:fs/promises";
+import { dirname, join, relative, resolve, sep } from "node:path";
+import { clearTimeout, setTimeout } from "node:timers";
+
 import chokidar from "chokidar";
-import { access, mkdir, readdir, readFile, writeFile } from "fs/promises";
-import { dirname, join, relative, resolve, sep } from "path";
 import createMatcher, { Matcher, scan } from "picomatch";
-import { clearTimeout, setTimeout } from "timers";
 
 import { FileSystem } from "./file-system.js";
 
@@ -14,7 +15,7 @@ export class NodeFileSystem implements FileSystem {
 	readonly #overwrites = new Map<string, string>();
 	readonly #overwriteHandlers = new Set<(filename: string) => void>();
 
-	public async overwrite(filename: string, content: string | null): Promise<void> {
+	async overwrite(filename: string, content: string | null): Promise<void> {
 		filename = resolve(filename);
 		if (content === null) {
 			try {
@@ -37,12 +38,12 @@ export class NodeFileSystem implements FileSystem {
 		}
 	}
 
-	public async readFile(filename: string): Promise<string> {
+	async readFile(filename: string): Promise<string> {
 		filename = resolve(filename);
 		return this.#overwrites.get(filename) ?? readFile(filename, "utf-8");
 	}
 
-	public async readOptionalFile(filename: string): Promise<string | undefined> {
+	async readOptionalFile(filename: string): Promise<string | undefined> {
 		filename = resolve(filename);
 		try {
 			return this.#overwrites.get(filename) ?? await readFile(filename, "utf-8");
@@ -54,12 +55,12 @@ export class NodeFileSystem implements FileSystem {
 		}
 	}
 
-	public async writeFile(filename: string, content: string): Promise<void> {
+	async writeFile(filename: string, content: string): Promise<void> {
 		await mkdir(dirname(filename), { recursive: true });
 		await writeFile(filename, content, "utf-8");
 	}
 
-	public watchFiles(options: FileSystem.WatchFileOptions): () => Promise<void> {
+	watchFiles(options: FileSystem.WatchFileOptions): () => Promise<void> {
 		const watcher = chokidar.watch(options.patterns, { cwd: options.cwd });
 
 		let ready = false;
@@ -145,7 +146,7 @@ export class NodeFileSystem implements FileSystem {
 		};
 	}
 
-	public async findFiles(options: FileSystem.FindFileOptions): Promise<string[]> {
+	async findFiles(options: FileSystem.FindFileOptions): Promise<string[]> {
 		const matchers: Matcher[] = [];
 		let basedirs: string[] = [];
 		for (const pattern of options.patterns) {

@@ -1,6 +1,7 @@
 #!/usr/bin/env node
+import { relative, resolve } from "node:path";
+
 import colors from "ansi-colors";
-import { relative, resolve } from "path";
 import parseArgv from "yargs-parser";
 
 import { Config } from "./config.js";

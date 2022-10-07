@@ -1,6 +1,7 @@
+import { readdir, readFile, writeFile } from "node:fs/promises";
+import { join, resolve } from "node:path";
+
 import test from "ava";
-import { readdir, readFile, writeFile } from "fs/promises";
-import { join, resolve } from "path";
 
 import { Config } from "../src/config.js";
 import { Diagnostic, getDiagnosticMessage } from "../src/diagnostics.js";

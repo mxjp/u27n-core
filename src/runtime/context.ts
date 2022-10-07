@@ -1,18 +1,18 @@
 import { Formatters, InterpolationFields, LocaleData, U27N } from ".";
 
 export class Context {
-	public constructor(
-		public readonly controller: U27N,
-		public readonly namespace: string,
-		public readonly sourceLocale: string,
+	constructor(
+		readonly controller: U27N,
+		readonly namespace: string,
+		readonly sourceLocale: string,
 	) {
 		this.t = this.t.bind(this);
 	}
 
-	public t(value: string, id: string): string;
-	public t(value: string, options: Context.TInterpolationOptions, id: string): string;
-	public t(value: string[], options: Context.TPluralOptions & Context.TInterpolationOptions, id: string): string;
-	public t(value: LocaleData.Value, optionsOrId: Partial<Context.TPluralOptions & Context.TInterpolationOptions> | string, id?: string): string {
+	t(value: string, id: string): string;
+	t(value: string, options: Context.TInterpolationOptions, id: string): string;
+	t(value: string[], options: Context.TPluralOptions & Context.TInterpolationOptions, id: string): string;
+	t(value: LocaleData.Value, optionsOrId: Partial<Context.TPluralOptions & Context.TInterpolationOptions> | string, id?: string): string {
 		const locale = this.controller.locale!;
 
 		if (typeof optionsOrId === "string") {

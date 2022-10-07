@@ -8,11 +8,11 @@ export class U27N {
 
 	#locale: Locale | null = null;
 
-	public readonly clients: Set<U27N.Client>;
-	public readonly formatters: Formatters;
-	public readonly updateHandlers: Set<U27N.UpdateHandler>;
+	readonly clients: Set<U27N.Client>;
+	readonly formatters: Formatters;
+	readonly updateHandlers: Set<U27N.UpdateHandler>;
 
-	public constructor(options: U27N.Options) {
+	constructor(options: U27N.Options) {
 		this.#localeFactory = options.localeFactory;
 		this.#locales = new Map();
 
@@ -21,11 +21,11 @@ export class U27N {
 		this.updateHandlers = new Set();
 	}
 
-	public get locale(): Locale | null {
+	get locale(): Locale | null {
 		return this.#locale;
 	}
 
-	public async setLocale(code: string): Promise<void> {
+	async setLocale(code: string): Promise<void> {
 		const locale = this.ensureLocale(code);
 
 		const tasks: Promise<void>[] = [];
@@ -44,7 +44,7 @@ export class U27N {
 		this.update();
 	}
 
-	public setLocaleAuto(locales: string[]): Promise<void> {
+	setLocaleAuto(locales: string[]): Promise<void> {
 		if (locales.length === 0) {
 			throw new TypeError("at least one locale must be specified");
 		}
@@ -52,7 +52,7 @@ export class U27N {
 		return this.setLocale(code);
 	}
 
-	public ensureLocale(code: string): Locale {
+	ensureLocale(code: string): Locale {
 		let locale = this.#locales.get(code);
 		if (locale === undefined) {
 			locale = this.#localeFactory(this, code);
@@ -61,15 +61,15 @@ export class U27N {
 		return locale;
 	}
 
-	public getLocale(code: string): Locale | undefined {
+	getLocale(code: string): Locale | undefined {
 		return this.#locales.get(code);
 	}
 
-	public update(): void {
+	update(): void {
 		this.updateHandlers.forEach(handler => handler(this));
 	}
 
-	public static detectLocale(locales: string[]): string | undefined {
+	static detectLocale(locales: string[]): string | undefined {
 		const localeSet = new Set(locales);
 		const localeLangs = new Map(locales.map(locale => ([LocaleCode.parse(locale).language, locale])));
 

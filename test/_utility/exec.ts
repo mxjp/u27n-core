@@ -1,5 +1,6 @@
+import { spawn } from "node:child_process";
+
 import { ExecutionContext } from "ava";
-import { spawn } from "child_process";
 
 export function exec(t: ExecutionContext, cwd: string, command: string, args: string[], options: ExecOptions = {}): Promise<ExecResult> {
 	return new Promise<ExecResult>((resolve, reject) => {

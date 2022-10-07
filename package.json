@@ -48,7 +48,7 @@
 		"prepack": "npm test && npm run build && npm run lint"
 	},
 	"devDependencies": {
-		"@mpt/eslint-rules": "^2.0.0",
+		"@mpt/eslint-rules": "^3.0.0",
 		"@types/js-string-escape": "^1.0.1",
 		"@types/node": "^16.11.1",
 		"@types/picomatch": "^2.3.0",

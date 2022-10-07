@@ -8,9 +8,9 @@ import { TranslationData } from "./translation-data.js";
 import { FileSystem } from "./utility/file-system.js";
 
 export class Project {
-	public readonly config: Config;
-	public readonly fileSystem: FileSystem;
-	public readonly dataProcessor: DataProcessor;
+	readonly config: Config;
+	readonly fileSystem: FileSystem;
+	readonly dataProcessor: DataProcessor;
 
 	readonly #plugins: Plugin[] = [];
 	readonly #pluginContext: PluginContext;
@@ -30,7 +30,7 @@ export class Project {
 		};
 	}
 
-	public watch(options: Project.WatchOptions): () => Promise<void> {
+	watch(options: Project.WatchOptions): () => Promise<void> {
 		return this.fileSystem.watchFiles({
 			cwd: this.config.context,
 			patterns: [
@@ -109,7 +109,7 @@ export class Project {
 		});
 	}
 
-	public async run(options: Project.RunOptions): Promise<Project.RunResult> {
+	async run(options: Project.RunOptions): Promise<Project.RunResult> {
 		let diagnostics: Diagnostic[] = [];
 		const translationDataJson = await this.fileSystem.readOptionalFile(this.config.translationData.filename);
 		const translationData = translationDataJson === undefined ? undefined : TranslationData.parseJson(translationDataJson);
@@ -204,7 +204,7 @@ export class Project {
 		}
 	}
 
-	public static async create(options: Project.Options): Promise<Project> {
+	static async create(options: Project.Options): Promise<Project> {
 		const plugins: Plugin[] = [];
 		const pluginSetupContext: PluginSetupContext = {
 			config: options.config,

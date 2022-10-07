@@ -1,18 +1,19 @@
+import { isAbsolute, join, normalize, relative } from "node:path";
+
 import { LineMap } from "@mpt/line-map";
-import { isAbsolute, join, normalize, relative } from "path";
 
 import type { FragmentIdGenerator } from "./fragment-id-generator.js";
 import type { TranslationData } from "./translation-data.js";
 
 export class Source<F extends Source.Fragment = Source.Fragment> {
-	public readonly content: string;
-	public readonly fragmentIdGenerator?: FragmentIdGenerator;
+	readonly content: string;
+	readonly fragmentIdGenerator?: FragmentIdGenerator;
 
 	#lineMap: LineMap | undefined = undefined;
 	#fragments: F[] | undefined = undefined;
 	#fragmentMap: Map<string, F> | undefined = undefined;
 
-	public constructor(content: string) {
+	constructor(content: string) {
 		this.content = content;
 	}
 
@@ -26,7 +27,7 @@ export class Source<F extends Source.Fragment = Source.Fragment> {
 	/**
 	 * Called to create an updated version of this source.
 	 */
-	public update?(context: Source.UpdateContext): Source.UpdateResult;
+	update?(context: Source.UpdateContext): Source.UpdateResult;
 
 	/**
 	 * Get an array of filenames that this source is compiled to.
@@ -35,13 +36,13 @@ export class Source<F extends Source.Fragment = Source.Fragment> {
 	 * fragment ids from this source are added to the
 	 * manifest as global fragments.
 	 */
-	public getOutputFilenames?(): string[];
+	getOutputFilenames?(): string[];
 
 	/**
 	 * A line map for this source that can be used
 	 * for converting between line/character positions and offsets.
 	 */
-	public get lineMap(): LineMap {
+	get lineMap(): LineMap {
 		if (this.#lineMap === undefined) {
 			this.#lineMap = new LineMap(this.content);
 		}
@@ -51,7 +52,7 @@ export class Source<F extends Source.Fragment = Source.Fragment> {
 	/**
 	 * An array of all fragments in this source.
 	 */
-	public get fragments(): readonly F[] {
+	get fragments(): readonly F[] {
 		if (this.#fragments === undefined) {
 			this.#fragments = this.parse ? this.parse() : [];
 		}
@@ -63,7 +64,7 @@ export class Source<F extends Source.Fragment = Source.Fragment> {
 	 *
 	 * Note that this may not contain all fragments if there are any duplicate fragment ids.
 	 */
-	public get fragmentMap(): ReadonlyMap<string, F> {
+	get fragmentMap(): ReadonlyMap<string, F> {
 		if (this.#fragmentMap === undefined) {
 			const map = new Map<string, F>();
 			const fragments = this.fragments;
@@ -84,7 +85,7 @@ export class Source<F extends Source.Fragment = Source.Fragment> {
 	 * @param rootDir The absolute path of the project root directory.
 	 * @param filename The absolute or relative filename of the source.
 	 */
-	public static filenameToSourceId(rootDir: string, filename: string): string {
+	static filenameToSourceId(rootDir: string, filename: string): string {
 		return (isAbsolute(filename) ? relative(rootDir, filename) : normalize(filename)).replace(/\\/g, "/");
 	}
 
@@ -94,7 +95,7 @@ export class Source<F extends Source.Fragment = Source.Fragment> {
 	 * @param rootDir The absolute path of the project root directory.
 	 * @param sourceId The source id.
 	 */
-	public static sourceIdToFilename(rootDir: string, sourceId: string): string {
+	static sourceIdToFilename(rootDir: string, sourceId: string): string {
 		return join(rootDir, sourceId);
 	}
 }

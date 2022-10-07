@@ -1,5 +1,6 @@
-import { readFile } from "fs/promises";
-import { dirname, normalize, resolve } from "path";
+import { readFile } from "node:fs/promises";
+import { dirname, normalize, resolve } from "node:path";
+
 import resolveModule from "resolve";
 
 import { DiagnosticSeverityConfig, DiagnosticType, diagnosticTypes } from "./diagnostics.js";

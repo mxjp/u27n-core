@@ -6,17 +6,17 @@ import type { TranslationData } from "../translation-data.js";
  * Utility for efficient modifying and querying project data objects.
  */
 export class TranslationDataView {
-	public readonly data: TranslationData;
+	readonly data: TranslationData;
 
 	/**
 	 * Indicates if the data in this data view has been modified.
 	 */
-	public modified = false;
+	modified = false;
 
 	/** A map of source ids to sets of fragment ids. */
 	readonly #sources = new Map<string, Set<string>>();
 
-	public constructor(data?: TranslationData) {
+	constructor(data?: TranslationData) {
 		if (data === undefined) {
 			this.data = {
 				version: 1,
@@ -42,7 +42,7 @@ export class TranslationDataView {
 	 *
 	 * @throws an error if the fragment value is undefined.
 	 */
-	public updateFragment(sourceId: string, fragmentId: string, update: Source.FragmentUpdate): void {
+	updateFragment(sourceId: string, fragmentId: string, update: Source.FragmentUpdate): void {
 		const existingFragment = this.data.fragments[fragmentId];
 		if (existingFragment) {
 			if (!TranslationDataView.#jsonEquals(existingFragment.value, update.value)) {
@@ -80,7 +80,7 @@ export class TranslationDataView {
 	/**
 	 * Remove fragments of a specific source that match a filter.
 	 */
-	public removeFragmentsOfSource(sourceId: string, discardObsolete: DiscardObsoleteFragmentType, filter?: TranslationDataView.FragmentFilter): void {
+	removeFragmentsOfSource(sourceId: string, discardObsolete: DiscardObsoleteFragmentType, filter?: TranslationDataView.FragmentFilter): void {
 		this.#sources.get(sourceId)?.forEach(fragmentId => {
 			const fragment = this.data.fragments[fragmentId];
 			if (!filter || filter(fragmentId, fragment)) {
@@ -92,7 +92,7 @@ export class TranslationDataView {
 	/**
 	 * Remove all fragments of all sources that match the filter.
 	 */
-	public removeSources(filter: TranslationDataView.SourceFilter, discardObsolete: DiscardObsoleteFragmentType): void {
+	removeSources(filter: TranslationDataView.SourceFilter, discardObsolete: DiscardObsoleteFragmentType): void {
 		this.#sources.forEach((fragmentIds, sourceId) => {
 			if (filter(sourceId)) {
 				fragmentIds.forEach(fragmentId => {
@@ -107,7 +107,7 @@ export class TranslationDataView {
 	 *
 	 * @returns The translation data fragment if it's value, source id and flags match the source fragment.
 	 */
-	public getSyncFragment(sourceId: string, fragment: Source.Fragment): TranslationData.Fragment | null {
+	getSyncFragment(sourceId: string, fragment: Source.Fragment): TranslationData.Fragment | null {
 		if (fragment.fragmentId === undefined) {
 			return null;
 		}
@@ -126,7 +126,7 @@ export class TranslationDataView {
 	/**
 	 * Iterate over all fragments.
 	 */
-	public forEachFragment(callback: (fragmentId: string, fragment: TranslationData.Fragment) => void): void {
+	forEachFragment(callback: (fragmentId: string, fragment: TranslationData.Fragment) => void): void {
 		for (const name in this.data.fragments) {
 			callback(name, this.data.fragments[name]);
 		}
@@ -135,7 +135,7 @@ export class TranslationDataView {
 	/**
 	 * Iterate over all fragments that are in sync.
 	 */
-	public forEachSyncFragment(getSource: (sourceId: string) => Source | undefined, callback: (fragmentId: string, fragment: TranslationData.Fragment) => void): void {
+	forEachSyncFragment(getSource: (sourceId: string) => Source | undefined, callback: (fragmentId: string, fragment: TranslationData.Fragment) => void): void {
 		this.forEachFragment((fragmentId, fragment) => {
 			const source = getSource(fragment.sourceId)?.fragmentMap.get(fragmentId);
 			if (source
@@ -217,28 +217,28 @@ export class TranslationDataView {
 	/**
 	 * Get a timestamp that can be used in the data object json format.
 	 */
-	public static createTimestamp(date: Date = new Date()): string {
+	static createTimestamp(date: Date = new Date()): string {
 		return date.toISOString();
 	}
 
 	/**
 	 * Parse a timestamp used in translation data objects.
 	 */
-	public static parseTimestamp(timestamp: string): number {
+	static parseTimestamp(timestamp: string): number {
 		return Date.parse(timestamp);
 	}
 
 	/**
 	 * Check if a translation is outdated compared to the parsed date of the fragment.
 	 */
-	public static isOutdated(fragmentModified: number, translation: TranslationData.Translation): boolean {
+	static isOutdated(fragmentModified: number, translation: TranslationData.Translation): boolean {
 		return Date.parse(translation.modified) < fragmentModified;
 	}
 
 	/**
 	 * Check if two translation data values are of the same type.
 	 */
-	public static valueTypeEquals(a: TranslationData.Value, b: TranslationData.Value): boolean {
+	static valueTypeEquals(a: TranslationData.Value, b: TranslationData.Value): boolean {
 		if (a === null || b === null) {
 			return false;
 		}
@@ -253,7 +253,7 @@ export class TranslationDataView {
 	/**
 	 * Check if the translation data value is a plural value.
 	 */
-	public static isPluralValue(value: TranslationData.Value): value is TranslationData.PluralValue {
+	static isPluralValue(value: TranslationData.Value): value is TranslationData.PluralValue {
 		return value !== null && typeof value === "object" && value.type === "plural";
 	}
 }

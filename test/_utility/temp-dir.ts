@@ -1,6 +1,7 @@
+import { mkdir, rm, writeFile } from "node:fs/promises";
+import { join, relative, resolve } from "node:path";
+
 import { ExecutionContext } from "ava";
-import { mkdir, rm, writeFile } from "fs/promises";
-import { join, relative, resolve } from "path";
 
 import { unindent } from "./unindent.js";
 

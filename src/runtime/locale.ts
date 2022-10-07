@@ -4,14 +4,14 @@ import { LocaleData } from "./locale-data.js";
 import { PluralProcessor } from "./pluralization.js";
 
 export class Locale {
-	public readonly controller: U27N;
-	public readonly code: string;
-	public readonly data: LocaleData;
+	readonly controller: U27N;
+	readonly code: string;
+	readonly data: LocaleData;
 
 	readonly #pluralProcessor: PluralProcessor | undefined;
 	readonly #interpolationProcessor: InterpolationProcessor | undefined;
 
-	public constructor(options: Locale.Options) {
+	constructor(options: Locale.Options) {
 		this.controller = options.controller;
 		this.code = options.code;
 		this.data = Object.create(null) as {};
@@ -19,7 +19,7 @@ export class Locale {
 		this.#interpolationProcessor = options.interpolationProcessor;
 	}
 
-	public addData(data: LocaleData): void {
+	addData(data: LocaleData): void {
 		for (const namespace in data) {
 			const source = data[namespace];
 			const current = this.data[namespace];
@@ -27,11 +27,11 @@ export class Locale {
 		}
 	}
 
-	public translate(namespace: string, id: string): LocaleData.Value | undefined {
+	translate(namespace: string, id: string): LocaleData.Value | undefined {
 		return this.data[namespace]?.[id];
 	}
 
-	public pluralize(value: string[], count: number): string {
+	pluralize(value: string[], count: number): string {
 		const processor = this.#pluralProcessor;
 		if (processor === undefined) {
 			throw new Error(`pluralization is disabled for locale "${this.code}"`);
@@ -39,7 +39,7 @@ export class Locale {
 		return processor(value, count);
 	}
 
-	public interpolate(value: string, fields: InterpolationFields, formatters?: Formatters): string {
+	interpolate(value: string, fields: InterpolationFields, formatters?: Formatters): string {
 		const processor = this.#interpolationProcessor;
 		if (processor === undefined) {
 			throw new Error(`interpolation is disabled for locale "${this.code}"`);

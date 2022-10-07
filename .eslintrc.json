@@ -4,8 +4,5 @@
 	"parserOptions": {
 		"tsconfigRootDir": ".",
 		"project": "./tsconfig.json"
-	},
-	"rules": {
-		"@typescript-eslint/explicit-member-accessibility": "off"
 	}
 }

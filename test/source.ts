@@ -1,6 +1,7 @@
+import { join } from "node:path";
+
 import { LineMap } from "@mpt/line-map";
 import test from "ava";
-import { join } from "path";
 
 import { Source } from "../src/source.js";
 

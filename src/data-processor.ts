@@ -40,39 +40,39 @@ export class DataProcessor {
 	 */
 	readonly #pendingTranslationChanges = new Map<string, Map<string, TranslationData.Translation>>();
 
-	public constructor(options: DataProcessor.Options = {}) {
+	constructor(options: DataProcessor.Options = {}) {
 		this.#fragmentIdGenerator = options.fragmentIdGenerator ?? new Base62FragmentIdGenerator();
 	}
 
 	/**
 	 * True if there are any pending changes.
 	 */
-	public get hasPendingChanges(): boolean {
+	get hasPendingChanges(): boolean {
 		return this.#pendingTranslationChanges.size > 0;
 	}
 
 	/**
 	 * Get the current translation data that is managed by this project.
 	 */
-	public get translationData(): TranslationData {
+	get translationData(): TranslationData {
 		return this.#translationDataView.data;
 	}
 
 	/**
 	 * Get or set if the translation data that is managed by this project has been modified by applying an update.
 	 */
-	public get translationDataModified(): boolean {
+	get translationDataModified(): boolean {
 		return this.#translationDataView.modified;
 	}
 
-	public set translationDataModified(value: boolean) {
+	set translationDataModified(value: boolean) {
 		this.#translationDataView.modified = value;
 	}
 
 	/**
 	 * Get a source instance for the specified source id.
 	 */
-	public getSource(sourceId: string): Source | undefined {
+	getSource(sourceId: string): Source | undefined {
 		return this.#sources.get(sourceId);
 	}
 
@@ -83,7 +83,7 @@ export class DataProcessor {
 	 *
 	 * @see {applyPendingChanges}
 	 */
-	public setTranslation(fragmentId: string, locale: string, value: TranslationData.Value, modified?: Date): void {
+	setTranslation(fragmentId: string, locale: string, value: TranslationData.Value, modified?: Date): void {
 		const translation: TranslationData.Translation = {
 			modified: TranslationDataView.createTimestamp(modified),
 			value,
@@ -102,14 +102,14 @@ export class DataProcessor {
 	/**
 	 * Discard all pending changes.
 	 */
-	public discardPendingChanges(): void {
+	discardPendingChanges(): void {
 		this.#pendingTranslationChanges.clear();
 	}
 
 	/**
 	 * Apply translation changes to a copy of the current translation data object.
 	 */
-	public applyPendingChanges(): TranslationData {
+	applyPendingChanges(): TranslationData {
 		const data = TranslationData.clone(this.#translationDataView.data);
 		this.#pendingTranslationChanges.forEach((locales, fragmentId) => {
 			const fragment = data.fragments[fragmentId];
@@ -125,7 +125,7 @@ export class DataProcessor {
 	/**
 	 * Export all pending changes in this data processor as a json serializable object.
 	 */
-	public exportPendingChanges(): DataProcessor.PendingChanges {
+	exportPendingChanges(): DataProcessor.PendingChanges {
 		const changes: DataProcessor.PendingChanges = {
 			translations: {},
 		};
@@ -144,7 +144,7 @@ export class DataProcessor {
 	 *
 	 * Changes that are already in place will not be overwritten.
 	 */
-	public importPendingChanges(changes: DataProcessor.PendingChanges): void {
+	importPendingChanges(changes: DataProcessor.PendingChanges): void {
 		for (const fragmentId in changes.translations) {
 			const translations = changes.translations[fragmentId];
 			const map = this.#pendingTranslationChanges.get(fragmentId);
@@ -165,7 +165,7 @@ export class DataProcessor {
 	 *
 	 * @returns The array of editable fragments or undefined if the source does not exist.
 	 */
-	public getEditableFragments(sourceId: string): DataProcessor.EditableFragment[] | undefined {
+	getEditableFragments(sourceId: string): DataProcessor.EditableFragment[] | undefined {
 		const source = this.#sources.get(sourceId);
 		if (source !== undefined) {
 			const editableFragments: DataProcessor.EditableFragment[] = [];
@@ -206,7 +206,7 @@ export class DataProcessor {
 	/**
 	 * Apply updates from disk to the project.
 	 */
-	public applyUpdate(update: DataProcessor.Update): DataProcessor.UpdateResult {
+	applyUpdate(update: DataProcessor.Update): DataProcessor.UpdateResult {
 		const modify = update.modify ?? true;
 		const modifiedSources = new Map<string, string>();
 
@@ -309,7 +309,7 @@ export class DataProcessor {
 		return { modifiedSources };
 	}
 
-	public getFragmentDiagnostics(options: DataProcessor.DiagnosticOptions): Diagnostic[] {
+	getFragmentDiagnostics(options: DataProcessor.DiagnosticOptions): Diagnostic[] {
 		const diagnostics: Diagnostic[] = [];
 		const allLocales = new Set<string>(options.translatedLocales);
 		allLocales.add(options.sourceLocale);
@@ -425,7 +425,7 @@ export class DataProcessor {
 		return diagnostics;
 	}
 
-	public generateLocaleData(options: DataProcessor.GenerateLocateDataOptions): Map<string, LocaleData> {
+	generateLocaleData(options: DataProcessor.GenerateLocateDataOptions): Map<string, LocaleData> {
 		const data = new Map<string, LocaleData>();
 
 		const { translatedLocales } = options;
@@ -478,7 +478,7 @@ export class DataProcessor {
 		return data;
 	}
 
-	public generateManifest(options: DataProcessor.GenerateManifestOptions): Manifest {
+	generateManifest(options: DataProcessor.GenerateManifestOptions): Manifest {
 		const manifest: Manifest = {
 			version: 1,
 			locales: {},

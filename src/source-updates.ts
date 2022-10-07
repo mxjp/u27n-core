@@ -3,11 +3,11 @@ export class SourceUpdates {
 	#source: string;
 	#updates: SourceUpdates.Update[] = [];
 
-	public constructor(source: string) {
+	constructor(source: string) {
 		this.#source = source;
 	}
 
-	public append(update: SourceUpdates.Update): this {
+	append(update: SourceUpdates.Update): this {
 		if (this.#updates.length > 0 && update.start < this.#updates[this.#updates.length - 1].end) {
 			throw new Error("updates must be appended in order");
 		}
@@ -18,7 +18,7 @@ export class SourceUpdates {
 		return this;
 	}
 
-	public format(): string {
+	format(): string {
 		const source = this.#source;
 		const parts: string[] = [];
 

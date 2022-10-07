@@ -1,5 +1,6 @@
-import { fileURLToPath, pathToFileURL } from "url";
-import { inspect } from "util";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import { inspect } from "node:util";
+
 import * as lsp from "vscode-languageserver/node";
 import { TextDocument } from "vscode-languageserver-textdocument";
 
