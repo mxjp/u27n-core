@@ -443,17 +443,6 @@ export class DataProcessor {
 			fragments[fragmentId] = value;
 		}
 
-		function toValue(translationDataValue: TranslationData.Value): LocaleData.Value {
-			if (typeof translationDataValue === "string") {
-				return translationDataValue;
-			} else if (translationDataValue !== null) {
-				switch (translationDataValue.type) {
-					case "plural": return translationDataValue.value;
-				}
-			}
-			throw new Error("invalid value");
-		}
-
 		this.#sources.forEach((source, sourceId) => {
 			source.fragments.forEach(fragment => {
 				if (fragment.enabled) {
@@ -467,7 +456,7 @@ export class DataProcessor {
 							if (translation !== undefined
 								&& TranslationDataView.valueTypeEquals(fragmentData.value, translation.value)
 								&& (options.includeOutdated || !TranslationDataView.isOutdated(fragmentModified, translation))) {
-								addValue(locale, options.namespace, fragment.fragmentId!, toValue(translation.value));
+								addValue(locale, options.namespace, fragment.fragmentId!, TranslationData.toRawValue(translation.value));
 							}
 						}
 					}

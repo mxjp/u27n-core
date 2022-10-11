@@ -1,3 +1,4 @@
+import type { LocaleData } from "./runtime/locale-data.js";
 
 /**
  * Json format that contains translation data for a project.
@@ -58,10 +59,16 @@ export namespace TranslationData {
 	 */
 	export type ObsoleteItem = [string, Fragment];
 
+	/**
+	 * Parse translation data from json.
+	 */
 	export function parseJson(json: string): TranslationData {
 		return JSON.parse(json) as TranslationData;
 	}
 
+	/**
+	 * Format translation data as json.
+	 */
 	export function formatJson(data: TranslationData, sorted: boolean): string {
 		if (sorted) {
 			const fragments = Object.entries(data.fragments);
@@ -79,7 +86,24 @@ export namespace TranslationData {
 		return JSON.stringify(data, null, "\t") + "\n";
 	}
 
+	/**
+	 * Create a deep clone of a translation data object.
+	 */
 	export function clone(data: TranslationData): TranslationData {
 		return JSON.parse(JSON.stringify(data)) as TranslationData;
+	}
+
+	/**
+	 * Get a raw value that can be used in locale data objects.
+	 */
+	export function toRawValue(value: Value): LocaleData.Value {
+		if (typeof value === "string") {
+			return value;
+		} else if (value !== null) {
+			switch (value.type) {
+				case "plural": return value.value;
+			}
+		}
+		throw new Error("invalid value");
 	}
 }

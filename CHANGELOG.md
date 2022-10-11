@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.17
++ Add utility for converting translation data values to raw locale data values.
+
 ## 1.16
 + Expose internal translation data view utility.
 
