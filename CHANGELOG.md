@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.16
++ Expose internal translation data view utility.
+
 ## 1.15
 + Add stable `Context.T` type for translation functions.
 + Fix interpolation processor syntax errors on iOS mobile devices.

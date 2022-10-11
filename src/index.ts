@@ -11,3 +11,4 @@ export * from "./source-updates.js";
 export * from "./translation-data.js";
 export * from "./utility/file-system.js";
 export * from "./utility/file-system-node.js";
+export * from "./utility/translation-data-view.js";
