@@ -14,6 +14,7 @@ U27N is a _universal internationalization_ framework that aims to provide an end
     + [Interpolation & Formatting](#interpolation--formatting)
     + [Pluralization](#pluralization)
   + [Concurrent Locales](#concurrent-locales)
++ [Changelog](./CHANGELOG.md)
 
 ## Packages
 + [@u27n/typescript](https://www.npmjs.com/package/@u27n/typescript) - Plugin for handling typescript and javascript source code.
