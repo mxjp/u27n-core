@@ -42,7 +42,7 @@ for (const cache of [false, true]) {
 
 		await controller.setLocale("en");
 		t.deepEqual(fetchCalls, ["en.json"]);
-		t.is(controller.locale, controller.getLocale("en"));
+		t.is(controller.locale, controller.getLocale("en")!);
 		t.deepEqual(controller.locale?.data, {
 			test: {
 				42: "Hello World!",
@@ -51,7 +51,7 @@ for (const cache of [false, true]) {
 
 		await controller.setLocale("de");
 		t.deepEqual(fetchCalls, ["en.json", "de.json"]);
-		t.is(controller.locale, controller.getLocale("de"));
+		t.is(controller.locale, controller.getLocale("de")!);
 		t.deepEqual(controller.locale?.data, {
 			test: {
 				42: "Hallo Welt!",

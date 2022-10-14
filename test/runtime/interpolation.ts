@@ -1,30 +1,30 @@
-import test, { ExecutionContext } from "ava";
+import test, { ExecutionContext, Macro } from "ava";
 
 import { defaultLocaleFactory, Formatter, Formatters, InterpolationFields, U27N } from "../../src/runtime/index.js";
-import { setMacroTitle } from "../_utility/macro.js";
 
-async function interpolate(t: ExecutionContext, value: string, fields: InterpolationFields, output: string, formatters?: Formatters) {
-	{
-		const controller = new U27N({
-			localeFactory: defaultLocaleFactory,
-		});
-		await controller.setLocale("en");
-		const locale = controller.locale!;
-		t.is(locale.interpolate(value, fields, formatters), output);
-	}
+const interpolate: Macro<[string, InterpolationFields, string, Formatters?]> = {
+	title: title => `default interpolation: ${title}`,
+	async exec(t: ExecutionContext, value: string, fields: InterpolationFields, output: string, formatters?: Formatters) {
+		{
+			const controller = new U27N({
+				localeFactory: defaultLocaleFactory,
+			});
+			await controller.setLocale("en");
+			const locale = controller.locale!;
+			t.is(locale.interpolate(value, fields, formatters), output);
+		}
 
-	if (formatters !== undefined) {
-		const controller = new U27N({
-			localeFactory: defaultLocaleFactory,
-			formatters,
-		});
-		await controller.setLocale("en");
-		const locale = controller.locale!;
-		t.is(locale.interpolate(value, fields), output, "controller formatters not used");
-	}
-}
-
-setMacroTitle(interpolate, "default interpolation");
+		if (formatters !== undefined) {
+			const controller = new U27N({
+				localeFactory: defaultLocaleFactory,
+				formatters,
+			});
+			await controller.setLocale("en");
+			const locale = controller.locale!;
+			t.is(locale.interpolate(value, fields), output, "controller formatters not used");
+		}
+	},
+};
 
 test("no fields", interpolate, "foo", {}, "foo");
 test("missing field", interpolate, "{a}", {}, "undefined");

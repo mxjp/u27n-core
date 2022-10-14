@@ -56,7 +56,7 @@ connection.onInitialize(async params => {
 
 		if (options.backupPendingChanges !== undefined) {
 			backupPendingChanges = debounce(options.backupPendingChanges, () => {
-				connection.sendNotification("u27n/backup-pending-changes", project!.dataProcessor.exportPendingChanges());
+				void connection.sendNotification("u27n/backup-pending-changes", project!.dataProcessor.exportPendingChanges());
 			});
 		}
 
@@ -88,13 +88,13 @@ connection.onInitialize(async params => {
 			await fileSystem.writeFile(config.translationData.filename, TranslationData.formatJson(data, config.translationData.sorted));
 			project!.dataProcessor.discardPendingChanges();
 			backupPendingChanges?.();
-			connection.sendNotification("u27n/project-update", {});
+			await connection.sendNotification("u27n/project-update", {});
 		});
 
-		connection.onRequest("u27n/discard-changes", () => {
+		connection.onRequest("u27n/discard-changes", async () => {
 			project!.dataProcessor.discardPendingChanges();
 			backupPendingChanges?.();
-			connection.sendNotification("u27n/project-update", {});
+			await connection.sendNotification("u27n/project-update", {});
 		});
 
 		let previousDiagnosticFileUris: string[] = [];
@@ -105,7 +105,7 @@ connection.onInitialize(async params => {
 			modify: false,
 			fragmentDiagnostics: true,
 
-			onDiagnostics: diagnostics => {
+			onDiagnostics: async diagnostics => {
 				const lspDiagnostics = new Map<string | null, lsp.Diagnostic[]>();
 
 				function addDiagnostic(diagnostic: Diagnostic, location: DiagnosticLocation | null) {
@@ -152,7 +152,7 @@ connection.onInitialize(async params => {
 				const clearDiagnosticFileUris = new Set(previousDiagnosticFileUris);
 				previousDiagnosticFileUris = [];
 
-				lspDiagnostics.forEach((diagnostics, sourceId) => {
+				for (const [sourceId, diagnostics] of lspDiagnostics) {
 					const uri = pathToFileURL(sourceId === null
 						? options.configFilename
 						: Source.sourceIdToFilename(config.context, sourceId)).toString();
@@ -160,14 +160,14 @@ connection.onInitialize(async params => {
 					clearDiagnosticFileUris.delete(uri);
 					previousDiagnosticFileUris.push(uri);
 
-					connection.sendDiagnostics({ uri, diagnostics });
-				});
+					await connection.sendDiagnostics({ uri, diagnostics });
+				}
 
-				clearDiagnosticFileUris.forEach(uri => {
-					connection.sendDiagnostics({ uri, diagnostics: [] });
-				});
+				for (const uri of clearDiagnosticFileUris) {
+					await connection.sendDiagnostics({ uri, diagnostics: [] });
+				}
 
-				connection.sendNotification("u27n/project-update", {});
+				await connection.sendNotification("u27n/project-update", {});
 			},
 		});
 
