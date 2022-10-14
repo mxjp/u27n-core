@@ -896,6 +896,7 @@ test(`${DataProcessor.prototype.generateLocaleData.name}, ${DataProcessor.protot
 	]));
 
 	t.deepEqual(processor.generateManifest({
+		namespace: "test",
 		localeDataFilenames: new Map([
 			["en", "/test/dist/en.json"],
 			["de", "/test/dist/hashed/de.1234.json"],
@@ -909,12 +910,15 @@ test(`${DataProcessor.prototype.generateLocaleData.name}, ${DataProcessor.protot
 		},
 		files: {
 			"": {
+				namespace: "test",
 				fragmentIds: ["9"],
 			},
 			"a.js": {
+				namespace: "test",
 				fragmentIds: ["0", "1", "2", "3", "5"],
 			},
 			"b.js": {
+				namespace: "test",
 				fragmentIds: ["7", "8"],
 			},
 		},

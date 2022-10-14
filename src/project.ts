@@ -167,9 +167,7 @@ export class Project {
 	}
 
 	async #generateOutput(): Promise<void> {
-		const manifestFilename = this.config.output.manifestFilename;
 		const localeDataFilenames = new Map<string, string>();
-
 		if (this.config.output.filename) {
 			const data = this.dataProcessor.generateLocaleData({
 				namespace: this.config.namespace,
@@ -185,8 +183,10 @@ export class Project {
 			}
 		}
 
+		const manifestFilename = this.config.output.manifestFilename;
 		if (manifestFilename) {
 			const manifest = this.dataProcessor.generateManifest({
+				namespace: this.config.namespace,
 				manifestFilename,
 				localeDataFilenames,
 			});

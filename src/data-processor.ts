@@ -507,6 +507,7 @@ export class DataProcessor {
 
 		files.forEach((info, fileId) => {
 			manifest.files[fileId] = {
+				namespace: options.namespace,
 				fragmentIds: Array.from(info.fragmentIds),
 			};
 		});
@@ -569,6 +570,8 @@ export declare namespace DataProcessor {
 	}
 
 	export interface GenerateManifestOptions {
+		/** The project namespace. */
+		namespace: string;
 		/** The absolute manifest filename. */
 		manifestFilename: string;
 		/** Map of locale codes to absolute output locale data filenames. */

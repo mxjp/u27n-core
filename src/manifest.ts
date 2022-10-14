@@ -22,6 +22,11 @@ export interface Manifest {
 export namespace Manifest {
 	export interface FileInfo {
 		/**
+		 * The project namespace used for this file.
+		 */
+		namespace: string;
+
+		/**
 		 * Array of fragment ids that are used in this source.
 		 */
 		fragmentIds: string[];

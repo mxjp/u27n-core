@@ -131,6 +131,7 @@ test("sync project", async t => {
 		},
 		files: {
 			"src/foo.txt.out": {
+				namespace: "test",
 				fragmentIds: ["0"],
 			},
 		},
@@ -176,6 +177,7 @@ test("out of sync project", async t => {
 		},
 		files: {
 			"src/foo.txt.out": {
+				namespace: "test",
 				fragmentIds: ["0"],
 			},
 		},

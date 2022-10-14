@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.18
++ Add namespace to manifest file info.
++ Add utility for resolving manifests.
+
 ## 1.17
 + Add utility for converting translation data values to raw locale data values.
 

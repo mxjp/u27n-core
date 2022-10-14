@@ -2,6 +2,8 @@ export * from "./config.js";
 export * from "./data-processor.js";
 export * from "./diagnostics.js";
 export * from "./fragment-id-generator.js";
+export * from "./manifest.js";
+export * from "./manifest-resolver.js";
 export * from "./obsolete-handling.js";
 export * from "./plugin.js";
 export * from "./plural-info.js";
