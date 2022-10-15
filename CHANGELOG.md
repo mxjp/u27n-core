@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.0
++ **Breaking:** Drop support for V1 manifests.
++ Implement V2 manifests with support for multiple namespaces per file.
+
 ## 1.18
 + Add namespace to manifest file info.
 + Add utility for resolving manifests.
