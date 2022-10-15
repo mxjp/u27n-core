@@ -12,9 +12,10 @@ export class ManifestResolver {
 	#resolve(context: string): Promise<ManifestResolver.Result | null> | null {
 		let promise = this.#resolving.get(context);
 		if (promise === undefined) {
-			const manifestFilename = join(context, Manifest.NAME);
-			promise = readFile(manifestFilename, "utf-8").then(json => {
+			const filename = join(context, Manifest.NAME);
+			promise = readFile(filename, "utf-8").then(json => {
 				return {
+					filename,
 					context,
 					manifest: Manifest.parse(json),
 				};
@@ -48,6 +49,9 @@ export class ManifestResolver {
 
 export declare namespace ManifestResolver {
 	export interface Result {
+		/** The absolute manifest filename. */
+		filename: string;
+
 		/**
 		 * The absolute path of the directory, the manifest is located in.
 		 */
