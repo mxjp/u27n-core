@@ -903,23 +903,32 @@ test(`${DataProcessor.prototype.generateLocaleData.name}, ${DataProcessor.protot
 		]),
 		manifestFilename: "/test/dist/manifest.json",
 	}), {
-		version: 1,
+		version: 2,
 		locales: {
 			en: "en.json",
 			de: "hashed/de.1234.json",
 		},
 		files: {
 			"": {
-				namespace: "test",
-				fragmentIds: ["9"],
+				namespaces: {
+					test: {
+						fragmentIds: ["9"],
+					},
+				},
 			},
 			"a.js": {
-				namespace: "test",
-				fragmentIds: ["0", "1", "2", "3", "5"],
+				namespaces: {
+					test: {
+						fragmentIds: ["0", "1", "2", "3", "5"],
+					},
+				},
 			},
 			"b.js": {
-				namespace: "test",
-				fragmentIds: ["7", "8"],
+				namespaces: {
+					test: {
+						fragmentIds: ["7", "8"],
+					},
+				},
 			},
 		},
 	});

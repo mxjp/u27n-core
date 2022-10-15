@@ -469,7 +469,7 @@ export class DataProcessor {
 
 	generateManifest(options: DataProcessor.GenerateManifestOptions): Manifest {
 		const manifest: Manifest = {
-			version: 1,
+			version: 2,
 			locales: {},
 			files: {},
 		};
@@ -478,9 +478,7 @@ export class DataProcessor {
 			manifest.locales[locale] = Manifest.filenameToFileId(options.manifestFilename, filename);
 		});
 
-		const files = new Map<string, {
-			fragmentIds: Set<string>;
-		}>();
+		const files = new Map<string, Set<string>>();
 
 		this.#sources.forEach(source => {
 			const filenames = source.getOutputFilenames?.();
@@ -490,27 +488,31 @@ export class DataProcessor {
 				: filenames.map(filename => Manifest.filenameToFileId(options.manifestFilename!, filename));
 
 			for (const fileId of fileIds) {
-				let info = files.get(fileId);
-				if (info === undefined) {
-					info = {
-						fragmentIds: new Set(),
-					};
-					files.set(fileId, info);
+				let fragmentIds = files.get(fileId);
+				if (fragmentIds === undefined) {
+					fragmentIds = new Set();
+					files.set(fileId, fragmentIds);
 				}
-				source.fragments.forEach(fragment => {
-					if (fragment.fragmentId !== undefined) {
-						info!.fragmentIds.add(fragment.fragmentId);
+
+				const fragments = source.fragments;
+				for (let i = 0; i < fragments.length; i++) {
+					const fragmentId = fragments[i].fragmentId;
+					if (fragmentId !== undefined) {
+						fragmentIds.add(fragmentId);
 					}
-				});
+				}
 			}
 		});
 
-		files.forEach((info, fileId) => {
+		for (const [fileId, fragmentIds] of files) {
 			manifest.files[fileId] = {
-				namespace: options.namespace,
-				fragmentIds: Array.from(info.fragmentIds),
+				namespaces: {
+					[options.namespace]: {
+						fragmentIds: Array.from(fragmentIds),
+					},
+				},
 			};
-		});
+		}
 
 		return manifest;
 	}

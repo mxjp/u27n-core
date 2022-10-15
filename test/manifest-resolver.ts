@@ -8,7 +8,7 @@ import { createFsLayout } from "./_utility/temp-dir.js";
 
 function createManifest(): Manifest {
 	return {
-		version: 1,
+		version: 2,
 		files: {},
 		locales: {},
 	};

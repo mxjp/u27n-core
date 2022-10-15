@@ -124,15 +124,18 @@ test("sync project", async t => {
 	]));
 
 	t.deepEqual(await readManifest(cwd), {
-		version: 1,
+		version: 2,
 		locales: {
 			en: "locale/en.json",
 			de: "locale/de.json",
 		},
 		files: {
 			"src/foo.txt.out": {
-				namespace: "test",
-				fragmentIds: ["0"],
+				namespaces: {
+					test: {
+						fragmentIds: ["0"],
+					},
+				},
 			},
 		},
 	});
@@ -170,15 +173,18 @@ test("out of sync project", async t => {
 	]));
 
 	t.deepEqual(await readManifest(cwd), {
-		version: 1,
+		version: 2,
 		locales: {
 			en: "locale/en.json",
 			de: "locale/de.json",
 		},
 		files: {
 			"src/foo.txt.out": {
-				namespace: "test",
-				fragmentIds: ["0"],
+				namespaces: {
+					test: {
+						fragmentIds: ["0"],
+					},
+				},
 			},
 		},
 	});

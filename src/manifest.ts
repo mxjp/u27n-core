@@ -3,10 +3,8 @@ import { dirname, isAbsolute, join, normalize, relative } from "node:path";
 export interface Manifest {
 	/**
 	 * The manifest version.
-	 *
-	 * This number is increased when fields are removed or the format or semantic of existing fields is changed.
 	 */
-	version: 1;
+	version: 2;
 
 	/**
 	 * Map of locale codes to compiled locale data file ids.
@@ -22,12 +20,14 @@ export interface Manifest {
 export namespace Manifest {
 	export interface FileInfo {
 		/**
-		 * The project namespace used for this file.
+		 * Map of namespaces to namespace information.
 		 */
-		namespace: string;
+		namespaces: Record<string, FileNamespaceInfo>;
+	}
 
+	export interface FileNamespaceInfo {
 		/**
-		 * Array of fragment ids that are used in this source.
+		 * Array of fragment ids from this namespace that are used by this file.
 		 */
 		fragmentIds: string[];
 	}
@@ -49,7 +49,7 @@ export namespace Manifest {
 	 */
 	export function parse(json: string): Manifest {
 		const manifest = JSON.parse(json) as Manifest;
-		if (manifest.version !== 1) {
+		if (manifest.version !== 2) {
 			throw new TypeError("unsupported manifest version");
 		}
 		return manifest;
