@@ -5,6 +5,7 @@ import { LocaleCode } from "./locale-code.js";
 export class U27N {
 	readonly #localeFactory: U27N.LocaleFactory;
 	readonly #locales: Map<string, Locale>;
+	readonly #setLocaleHooks: Set<U27N.SetLocaleHook>;
 
 	#locale: Locale | null = null;
 
@@ -15,6 +16,7 @@ export class U27N {
 	constructor(options: U27N.Options) {
 		this.#localeFactory = options.localeFactory;
 		this.#locales = new Map();
+		this.#setLocaleHooks = new Set();
 
 		this.clients = new Set(options.clients);
 		this.formatters = new Map(options.formatters!);
@@ -27,6 +29,7 @@ export class U27N {
 
 	async setLocale(code: string): Promise<void> {
 		const locale = this.ensureLocale(code);
+		this.#setLocaleHooks.forEach(hook => hook(locale));
 
 		const tasks: Promise<void>[] = [];
 		this.clients.forEach(client => {
@@ -42,6 +45,15 @@ export class U27N {
 
 		this.#locale = locale;
 		this.update();
+	}
+
+	registerSetLocaleHook(hook: U27N.SetLocaleHook): U27N.SetLocaleHook {
+		this.#setLocaleHooks.add(hook);
+		return hook;
+	}
+
+	unregisterSetLocaleHook(hook: U27N.SetLocaleHook): void {
+		this.#setLocaleHooks.delete(hook);
 	}
 
 	setLocaleAuto(locales: string[]): Promise<void> {
@@ -106,5 +118,9 @@ export declare namespace U27N {
 
 	export interface UpdateHandler {
 		(controller: U27N): void;
+	}
+
+	export interface SetLocaleHook {
+		(targetLocale: Locale): void;
 	}
 }

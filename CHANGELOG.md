@@ -1,5 +1,8 @@
 # Changelog
 
+## 2.1
++ Add `setLocale` hooks.
+
 ## 2.0
 + **Breaking:** Drop support for V1 manifests.
 + Implement V2 manifests with support for multiple namespaces per file.
