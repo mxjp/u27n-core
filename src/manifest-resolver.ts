@@ -41,7 +41,7 @@ export class ManifestResolver {
 	 */
 	async resolve(targetFilename: string): Promise<ManifestResolver.Result | null> {
 		if (!isAbsolute(targetFilename)) {
-			throw new TypeError("filename must be an absolute path");
+			return null;
 		}
 		return this.#resolve(dirname(targetFilename));
 	}
