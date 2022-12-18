@@ -13,7 +13,7 @@ import { Source } from "../source.js";
 import { TranslationData } from "../translation-data.js";
 import { debounce } from "../utility/debounce.js";
 import { NodeFileSystem } from "../utility/file-system-node.js";
-import type { LocaleInfo, Options, ProjectInfo, SetTranslationRequest } from "./types.js";
+import type { LocaleInfo, Options, ProjectInfo, ProjectUpdateInfo, SetTranslationRequest } from "./types.js";
 
 const connection = lsp.createConnection(lsp.ProposedFeatures.all);
 const documents = new lsp.TextDocuments(TextDocument);
@@ -88,13 +88,17 @@ connection.onInitialize(async params => {
 			await fileSystem.writeFile(config.translationData.filename, TranslationData.formatJson(data, config.translationData.sorted));
 			project!.dataProcessor.discardPendingChanges();
 			backupPendingChanges?.();
-			await connection.sendNotification("u27n/project-update", {});
+			await connection.sendNotification("u27n/project-update", {
+				cause: "save-changes",
+			} as ProjectUpdateInfo);
 		});
 
 		connection.onRequest("u27n/discard-changes", async () => {
 			project!.dataProcessor.discardPendingChanges();
 			backupPendingChanges?.();
-			await connection.sendNotification("u27n/project-update", {});
+			await connection.sendNotification("u27n/project-update", {
+				cause: "discard-changes",
+			} as ProjectUpdateInfo);
 		});
 
 		let previousDiagnosticFileUris: string[] = [];
@@ -167,7 +171,9 @@ connection.onInitialize(async params => {
 					await connection.sendDiagnostics({ uri, diagnostics: [] });
 				}
 
-				await connection.sendNotification("u27n/project-update", {});
+				await connection.sendNotification("u27n/project-update", {
+					cause: "diagnostics",
+				} as ProjectUpdateInfo);
 			},
 		});
 

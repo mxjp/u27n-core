@@ -19,6 +19,15 @@ export interface ProjectInfo {
 	translatedLocales: LocaleInfo[];
 }
 
+export interface ProjectUpdateInfo {
+	cause: ProjectUpdateCause;
+}
+
+export type ProjectUpdateCause
+	= "save-changes"
+	| "discard-changes"
+	| "diagnostics";
+
 export interface SetTranslationRequest {
 	fragmentId: string;
 	locale: string;

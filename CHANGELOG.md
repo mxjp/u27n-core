@@ -1,5 +1,8 @@
 # Changelog
 
+## 2.2
++ Add project update causes to language server.
+
 ## 2.1
 + Add `setLocale` hooks.
 
