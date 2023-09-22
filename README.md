@@ -14,19 +14,19 @@ U27N is a _universal internationalization_ framework that aims to provide an end
     + [Interpolation & Formatting](#interpolation--formatting)
     + [Pluralization](#pluralization)
   + [Concurrent Locales](#concurrent-locales)
++ [Toolchain API](#toolchain-api)
 + [Changelog](./CHANGELOG.md)
 
 ## Packages
 + [@u27n/typescript](https://www.npmjs.com/package/@u27n/typescript) - Plugin for handling typescript and javascript source code.
 + [@u27n/webpack](https://www.npmjs.com/package/@u27n/webpack) - Webpack plugin and runtime.
-+ [@u27n/vscode](https://marketplace.visualstudio.com/items?itemName=mxjp.u27n) - VSCode extension for diagnostics and translation editing.
 
 <br>
 
 
 
 # Configuration
-The configuration is stored in a file called **u27n.json**:
+The configuration is stored in a file usually called **u27n.json**:
 ```js
 {
   // Optional. The filename where translation data is stored.
@@ -248,4 +248,76 @@ function renderPage(t) {
 server.onRequest(user => {
   return renderPage(locales[user.locale] ?? locales.en);
 });
+```
+
+<br>
+
+
+
+# Toolchain API
+The toolchain API is exported by the `@u27n/core` package and can be used to implement alternatives to the command line interface such as the [@u27n/webpack](https://www.npmjs.com/package/@u27n/webpack) package.
+
+## Creating a config
+```ts
+import { Config } from "@u27n/core";
+
+// Read and validate a config file:
+const config = await Config.read("./u27n.json");
+
+// Create a validated config object programmatically:
+const config = Config.fromJson({
+  include: [
+    "./src/**/*"
+  ],
+  locales: [
+    "en",
+    "de"
+  ],
+}, process.cwd());
+```
+
+## Projects
+Projects provide a high level API for compiling locales, updating translation data and watching for changes.
+```ts
+import { Project, NodeFileSystem } from "@u27n/core";
+
+// Create a project instance:
+const project = await Project.create({
+  config,
+  fileSystem: new NodeFileSystem()
+});
+
+// Run once:
+// (Diagnostics can be accessed via the result object)
+const result = await project.run({
+  // If true, output files are generated:
+  output: true,
+  // If true, sources and translation data may be modified:
+  modify: false,
+  // If true, additional diagnostics for data fragments are collected:
+  fragmentDiagnostics: true,
+});
+
+// Run and watch for changes:
+const stop = await project.watch({
+  // Same options as in project.run(..) with the addition of:
+
+  // Passed to the file system abstraction as a delay when watching for changes:
+  delay: 100,
+
+  // Called for every critical error that occurs:
+  onError(error: unknown) {
+    // ...
+  },
+
+  // Called when a set of changes has been processed.
+  // This function may return a promise that is
+  // awaited before processing further change sets.
+  async onFinish(result: WatchResult) {
+    // ...
+  },
+});
+
+// Stop watching for changes:
+await stop();
 ```
