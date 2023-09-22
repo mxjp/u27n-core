@@ -91,8 +91,8 @@ const diagnosticColors = new Map<DiagnosticSeverity, colors.StyleFunction>([
 			modify,
 			fragmentDiagnostics: true,
 			onError: console.error,
-			onDiagnostics: diagnostics => {
-				diagnostics.forEach(handleDiagnostic);
+			onFinish: result => {
+				result.diagnostics.forEach(handleDiagnostic);
 			},
 		});
 	} else {

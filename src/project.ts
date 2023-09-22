@@ -100,7 +100,6 @@ export class Project {
 					await this.#generateOutput();
 				}
 
-				await options.onDiagnostics?.(diagnostics);
 				await options.onFinish?.({
 					diagnostics,
 					translationDataChanged: translationData !== undefined,
@@ -234,8 +233,6 @@ export declare namespace Project {
 		output: boolean;
 		modify: boolean;
 		fragmentDiagnostics: boolean;
-		/** @deprecated Use {@link onFinish} instead. */
-		onDiagnostics?: (diagnostics: Diagnostic[]) => void | Promise<void>;
 		onFinish?: (result: WatchRunResult) => void | Promise<void>;
 		onError?: (error: unknown) => void;
 	}
