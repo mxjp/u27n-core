@@ -1,5 +1,8 @@
 # Changelog
 
+## 3.0
++ **Breaking:** Drop support for the included language server.
+
 ## 2.2
 + Add project update causes to language server.
 
