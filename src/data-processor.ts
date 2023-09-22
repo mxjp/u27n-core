@@ -35,20 +35,8 @@ export class DataProcessor {
 	 */
 	readonly #sourceFragments = new SourceFragmentMap();
 
-	/**
-	 * Map from fragment ids to locales to translations.
-	 */
-	readonly #pendingTranslationChanges = new Map<string, Map<string, TranslationData.Translation>>();
-
 	constructor(options: DataProcessor.Options = {}) {
 		this.#fragmentIdGenerator = options.fragmentIdGenerator ?? new Base62FragmentIdGenerator();
-	}
-
-	/**
-	 * True if there are any pending changes.
-	 */
-	get hasPendingChanges(): boolean {
-		return this.#pendingTranslationChanges.size > 0;
 	}
 
 	/**
@@ -74,29 +62,6 @@ export class DataProcessor {
 	 */
 	getSource(sourceId: string): Source | undefined {
 		return this.#sources.get(sourceId);
-	}
-
-	/**
-	 * Set a translation.
-	 *
-	 * Note, that the translation data object is not changed in place, but a pending change is created.
-	 *
-	 * @see {applyPendingChanges}
-	 */
-	setTranslation(fragmentId: string, locale: string, value: TranslationData.Value, modified?: Date): void {
-		const translation: TranslationData.Translation = {
-			modified: TranslationDataView.createTimestamp(modified),
-			value,
-		};
-
-		const translations = this.#pendingTranslationChanges.get(fragmentId);
-		if (translations === undefined) {
-			this.#pendingTranslationChanges.set(fragmentId, new Map([
-				[locale, translation],
-			]));
-		} else {
-			translations.set(locale, translation);
-		}
 	}
 
 	/**
