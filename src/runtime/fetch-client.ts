@@ -1,5 +1,6 @@
-import { LocaleData, U27N } from ".";
+import { U27N } from "./controller.js";
 import { Locale } from "./locale.js";
+import { LocaleData } from "./locale-data.js";
 
 export class FetchClient implements U27N.Client {
 	readonly #url: string;

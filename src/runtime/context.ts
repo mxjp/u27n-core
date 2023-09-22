@@ -1,4 +1,6 @@
-import { Formatters, InterpolationFields, LocaleData, U27N } from ".";
+import { U27N } from "./controller.js";
+import { Formatters, InterpolationFields } from "./interpolation.js";
+import { LocaleData } from "./locale-data.js";
 
 export class Context {
 	constructor(
