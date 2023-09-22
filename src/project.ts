@@ -49,7 +49,7 @@ export class Project {
 					if (filename === this.config.translationData.filename) {
 						const translationDataJson = await this.fileSystem.readOptionalFile(this.config.translationData.filename);
 						if (translationDataJson !== undefined) {
-							translationData = TranslationData.parseJson(translationDataJson);
+							translationData = TranslationData.parseJson(translationDataJson.toString("utf-8"));
 						}
 					} else {
 						const source = await this.#createSource(filename);
@@ -82,10 +82,10 @@ export class Project {
 				if (options.modify) {
 					if (this.dataProcessor.translationDataModified) {
 						this.dataProcessor.translationDataModified = false;
-						await this.fileSystem.writeFile(this.config.translationData.filename, TranslationData.formatJson(this.dataProcessor.translationData, this.config.translationData.sorted));
+						await this.fileSystem.writeFile(this.config.translationData.filename, Buffer.from(TranslationData.formatJson(this.dataProcessor.translationData, this.config.translationData.sorted), "utf-8"));
 					}
 					for (const [sourceId, content] of result.modifiedSources) {
-						await this.fileSystem.writeFile(Source.sourceIdToFilename(this.config.context, sourceId), content);
+						await this.fileSystem.writeFile(Source.sourceIdToFilename(this.config.context, sourceId), Buffer.from(content, "utf-8"));
 					}
 				}
 
@@ -112,7 +112,7 @@ export class Project {
 	async run(options: Project.RunOptions): Promise<Project.RunResult> {
 		let diagnostics: Diagnostic[] = [];
 		const translationDataJson = await this.fileSystem.readOptionalFile(this.config.translationData.filename);
-		const translationData = translationDataJson === undefined ? undefined : TranslationData.parseJson(translationDataJson);
+		const translationData = translationDataJson === undefined ? undefined : TranslationData.parseJson(translationDataJson.toString("utf-8"));
 
 		const sources = new Map<string, Source>();
 		for (const filename of await this.fileSystem.findFiles({
@@ -141,10 +141,10 @@ export class Project {
 		if (options.modify) {
 			if (this.dataProcessor.translationDataModified) {
 				this.dataProcessor.translationDataModified = false;
-				await this.fileSystem.writeFile(this.config.translationData.filename, TranslationData.formatJson(this.dataProcessor.translationData, this.config.translationData.sorted));
+				await this.fileSystem.writeFile(this.config.translationData.filename, Buffer.from(TranslationData.formatJson(this.dataProcessor.translationData, this.config.translationData.sorted), "utf-8"));
 			}
 			for (const [sourceId, content] of result.modifiedSources) {
-				await this.fileSystem.writeFile(Source.sourceIdToFilename(this.config.context, sourceId), content);
+				await this.fileSystem.writeFile(Source.sourceIdToFilename(this.config.context, sourceId), Buffer.from(content, "utf-8"));
 			}
 		} else if (this.dataProcessor.translationDataModified || result.modifiedSources.size > 0) {
 			diagnostics.push({
@@ -178,7 +178,7 @@ export class Project {
 
 			for (const [locale, localeData] of data) {
 				const filename = Config.getOutputFilename(this.config.output.filename, locale);
-				await this.fileSystem.writeFile(filename, JSON.stringify(localeData));
+				await this.fileSystem.writeFile(filename, Buffer.from(JSON.stringify(localeData), "utf-8"));
 				localeDataFilenames.set(locale, filename);
 			}
 		}
@@ -190,7 +190,7 @@ export class Project {
 				manifestFilename,
 				localeDataFilenames,
 			});
-			await this.fileSystem.writeFile(manifestFilename, Manifest.stringify(manifest));
+			await this.fileSystem.writeFile(manifestFilename, Buffer.from(Manifest.stringify(manifest), "utf-8"));
 		}
 	}
 

@@ -1,4 +1,4 @@
-import { access, mkdir, readdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { clearTimeout, setTimeout } from "node:timers";
 
@@ -12,41 +12,14 @@ function isOrContains(parent: string, nested: string): boolean {
 }
 
 export class NodeFileSystem implements FileSystem {
-	readonly #overwrites = new Map<string, string>();
-	readonly #overwriteHandlers = new Set<(filename: string) => void>();
-
-	async overwrite(filename: string, content: string | null): Promise<void> {
-		filename = resolve(filename);
-		if (content === null) {
-			try {
-				this.#overwrites.delete(filename);
-
-				await access(filename);
-				this.#overwriteHandlers.forEach(handler => handler(filename));
-			// eslint-disable-next-line no-empty
-			} catch {}
-		} else {
-			try {
-				this.#overwrites.set(filename, content);
-
-				const realContent = await readFile(filename, "utf-8");
-				if (realContent !== content) {
-					this.#overwriteHandlers.forEach(handler => handler(filename));
-				}
-			// eslint-disable-next-line no-empty
-			} catch {}
-		}
+	async readFile(filename: string): Promise<Buffer> {
+		return readFile(resolve(filename));
 	}
 
-	async readFile(filename: string): Promise<string> {
-		filename = resolve(filename);
-		return this.#overwrites.get(filename) ?? readFile(filename, "utf-8");
-	}
-
-	async readOptionalFile(filename: string): Promise<string | undefined> {
+	async readOptionalFile(filename: string): Promise<Buffer | undefined> {
 		filename = resolve(filename);
 		try {
-			return this.#overwrites.get(filename) ?? await readFile(filename, "utf-8");
+			return await readFile(filename);
 		} catch (error) {
 			if ((error as NodeJS.ErrnoException).code === "ENOENT") {
 				return undefined;
@@ -55,9 +28,9 @@ export class NodeFileSystem implements FileSystem {
 		}
 	}
 
-	async writeFile(filename: string, content: string): Promise<void> {
+	async writeFile(filename: string, content: Buffer): Promise<void> {
 		await mkdir(dirname(filename), { recursive: true });
-		await writeFile(filename, content, "utf-8");
+		await writeFile(filename, content);
 	}
 
 	watchFiles(options: FileSystem.WatchFileOptions): () => Promise<void> {
@@ -97,16 +70,6 @@ export class NodeFileSystem implements FileSystem {
 			}, options.delay);
 		}
 
-		const overwriteMatchers = options.patterns.map(pattern => createMatcher(pattern));
-		const overwriteHandler = (filename: string) => {
-			const rel = relative(options.cwd, filename);
-			if (overwriteMatchers.some(matcher => matcher(rel))) {
-				updated.add(filename);
-				handleChanges();
-			}
-		};
-		this.#overwriteHandlers.add(overwriteHandler);
-
 		watcher.on("add", filename => {
 			filename = join(options.cwd, filename);
 			updated.add(filename);
@@ -138,7 +101,6 @@ export class NodeFileSystem implements FileSystem {
 		});
 
 		return async () => {
-			this.#overwriteHandlers.delete(overwriteHandler);
 			await watcher.close();
 			if (handleChangesTimer !== null) {
 				clearTimeout(handleChangesTimer);

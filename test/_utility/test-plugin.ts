@@ -5,9 +5,9 @@ export class TestPlugin implements Plugin {
 	public async setup(_setupContext: PluginSetupContext, _config: TestPlugin.Config): Promise<void> {
 	}
 
-	public createSource(filename: string, content: string): TestSource | undefined {
+	public createSource(filename: string, content: Buffer): TestSource | undefined {
 		if (/\.txt$/.test(filename)) {
-			return new TestSource(content).withOutputFilenames([
+			return new TestSource(content.toString("utf-8")).withOutputFilenames([
 				filename + ".out",
 			]);
 		}

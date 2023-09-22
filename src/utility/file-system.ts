@@ -1,8 +1,8 @@
 
 export interface FileSystem {
-	readFile(filename: string): Promise<string>;
-	readOptionalFile(filename: string): Promise<string | undefined>;
-	writeFile(filename: string, content: string): Promise<void>;
+	readFile(filename: string): Promise<Buffer>;
+	readOptionalFile(filename: string): Promise<Buffer | undefined>;
+	writeFile(filename: string, content: Buffer): Promise<void>;
 	watchFiles(options: FileSystem.WatchFileOptions): () => Promise<void>;
 	findFiles(options: FileSystem.FindFileOptions): Promise<string[]>;
 }

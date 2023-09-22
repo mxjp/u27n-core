@@ -32,7 +32,7 @@ export interface Plugin {
 	 *
 	 * @returns A source instance or undefined if this plugin can not handle the specified file type.
 	 */
-	createSource?(filename: string, content: string, context: PluginContext): Source | undefined | void;
+	createSource?(filename: string, content: Buffer, context: PluginContext): Source | undefined | void;
 }
 
 export interface PluginModule {

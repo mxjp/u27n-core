@@ -1,6 +1,7 @@
 # Changelog
 
 ## 3.0
++ **Breaking:** Replace strings with Buffers in file system abstraction and plugin api.
 + **Breaking:** Drop support for the included language server.
 
 ## 2.2
