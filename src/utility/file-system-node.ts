@@ -69,7 +69,7 @@ export class NodeFileSystem implements FileSystem {
 		const updated = new Set<string>();
 		const deleted = new Set<string>();
 
-		let handleChangesTimer: NodeJS.Timer | null = null;
+		let handleChangesTimer: NodeJS.Timeout | null = null;
 		function handleChanges() {
 			if (handleChangesTimer !== null) {
 				clearTimeout(handleChangesTimer);
