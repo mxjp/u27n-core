@@ -14,7 +14,7 @@ export class Project {
 	readonly config: Config;
 	readonly dataProcessor: DataProcessor;
 
-	readonly #plugins: Plugin[] = [];
+	readonly #createSourcePlugins: Plugin[] = [];
 	readonly #pluginContext: PluginContext;
 
 	private constructor(
@@ -24,7 +24,7 @@ export class Project {
 	) {
 		this.config = options.config;
 		this.dataProcessor = dataProcessor;
-		this.#plugins = plugins;
+		this.#createSourcePlugins = plugins.filter(plugin => plugin.createSource);
 		this.#pluginContext = {
 			config: options.config,
 			dataProcessor,
@@ -177,7 +177,7 @@ export class Project {
 
 	async #createSource(filename: string): Promise<Source | undefined> {
 		const content = await readFile(filename);
-		for (const plugin of this.#plugins) {
+		for (const plugin of this.#createSourcePlugins) {
 			const source = plugin.createSource?.(filename, content, this.#pluginContext);
 			if (source) {
 				return source;
