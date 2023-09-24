@@ -44,7 +44,7 @@
 		"test": "npm run clean && npm run generate && tsc -p tsconfig-test.json && ava -v",
 		"start": "npm run clean && npm run generate && tsc -p tsconfig-test.json && concurrently \"tsc -p tsconfig-test.json -w\" \"ava -v -w\"",
 		"start:build": "concurrently \"tsc -p tsconfig-es.json -w\" \"tsc -p tsconfig-cjs.json -w\"",
-		"lint": "eslint --no-error-on-unmatched-pattern --config .eslintrc.json ./src/**/* ./test/**/*",
+		"lint": "eslint --no-error-on-unmatched-pattern --config .eslintrc.js ./src/**/* ./test/**/*",
 		"prepack": "npm test && npm run build && npm run lint"
 	},
 	"devDependencies": {
