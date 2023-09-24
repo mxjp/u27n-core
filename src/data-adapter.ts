@@ -119,23 +119,6 @@ export namespace DataAdapter {
 		config: Config;
 	}
 
-	export interface Module {
-		createDataAdapter(context: CreateContext, config: unknown): DataAdapter | Promise<DataAdapter>;
-	}
-
-	/**
-	 * Create a new data adapter.
-	 */
-	export async function create(context: CreateContext): Promise<DataAdapter> {
-		let module: Module;
-		if (context.config.data.adapter) {
-			module = await import(context.config.data.adapter) as Module;
-		} else {
-			module = await import("./data-adapter-default.js");
-		}
-		return module.createDataAdapter(context, context.config.data);
-	}
-
 	/**
 	 * Check if two translation values are of the same type.
 	 */

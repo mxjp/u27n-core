@@ -1,23 +1,9 @@
 import { open } from "node:fs/promises";
-import { resolve } from "node:path";
 
-import { Config } from "./config.js";
 import { DataAdapter } from "./data-adapter.js";
 import { writeFile } from "./file-system.js";
 import { DiscardObsoleteFragmentType } from "./obsolete-handling.js";
 import { Source } from "./source.js";
-
-export function createDataAdapter(ctx: DataAdapter.CreateContext, config: DefaultDataAdapterConfig): DataAdapter {
-	if (typeof config.filename !== "string") {
-		throw new TypeError("data.filename must be a string.");
-	}
-	const filename = resolve(ctx.config.context, config.filename);
-	return new DefaultDataAdapter(filename);
-}
-
-interface DefaultDataAdapterConfig extends Config.DataAdapter {
-	filename: string;
-}
 
 export class DefaultDataAdapter implements DataAdapter {
 	#filename: string | undefined;

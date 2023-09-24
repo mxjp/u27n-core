@@ -9,7 +9,7 @@ import { DiscardObsoleteFragmentType, discardObsoleteFragmentTypes } from "./obs
 
 export interface Config {
 	readonly context: string;
-	readonly data: Config.DataAdapter;
+	readonly data: string;
 	readonly namespace: string;
 	readonly include: string[];
 	readonly sourceLocale: string;
@@ -22,7 +22,7 @@ export interface Config {
 
 export namespace Config {
 	export interface Json {
-		data?: DataAdapter;
+		data?: string;
 		namespace?: string;
 		include?: string[];
 		locales?: string[];
@@ -30,10 +30,6 @@ export namespace Config {
 		obsolete?: ObsoleteJson;
 		output?: OutputJson;
 		diagnostics?: DiagnosticSeverityConfig;
-	}
-
-	export interface DataAdapter extends Record<string, unknown> {
-		adapter?: string;
 	}
 
 	export interface PluginJson {
@@ -76,7 +72,7 @@ export namespace Config {
 	}
 
 	export interface Defaults {
-		data: DataAdapter;
+		data: string;
 		namespace: string;
 		include: string[];
 		locales: string[];
@@ -88,9 +84,7 @@ export namespace Config {
 	}
 
 	export const DEFAULTS: Defaults = {
-		data: {
-			filename: "./u27n-data.json",
-		},
+		data: "./u27n-data.json",
 		namespace: "",
 		include: ["./src/**/*"],
 		locales: ["en"],
@@ -124,27 +118,8 @@ export namespace Config {
 		};
 
 		const data = json.data ?? allDefaults.data;
-		if (data === null || typeof data !== "object" || Array.isArray(data)) {
-			throw new TypeError("data must be an object.");
-		}
-		if (data.adapter !== undefined && typeof data.adapter !== "string") {
-			throw new TypeError("data.adapter must be a string or undefined.");
-		}
-
-		if (data.adapter !== undefined) {
-			// eslint-disable-next-line require-atomic-updates
-			data.adapter = await new Promise<string>((resolve, reject) => {
-				resolveModule(data.adapter!, {
-					basedir: context,
-					includeCoreModules: false,
-				}, (error, entry) => {
-					if (error) {
-						reject(error);
-					} else {
-						resolve(normalize(entry!));
-					}
-				});
-			});
+		if (typeof data !== "string") {
+			throw new TypeError("data must be a string.");
 		}
 
 		const namespace = json.namespace ?? allDefaults.namespace;

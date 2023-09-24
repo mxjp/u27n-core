@@ -1,10 +1,18 @@
 import type { Config } from "./config.js";
+import { DataAdapter } from "./data-adapter.js";
 import { DataProcessor } from "./data-processor.js";
 import type { Source } from "./source.js";
 
 export interface PluginSetupContext {
 	/** The global configuration. */
 	readonly config: Config;
+
+	/**
+	 * Set the data adapter for the curren project.
+	 *
+	 * This can be called once per project. Any consecutive call will throw an error.
+	 */
+	setDataAdapter(dataAdapter: DataAdapter): void;
 }
 
 export interface PluginContext {

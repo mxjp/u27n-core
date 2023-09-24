@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 
 import { Config } from "./config.js";
 import { DataAdapter } from "./data-adapter.js";
+import { DefaultDataAdapter } from "./data-adapter-default.js";
 import { DataProcessor } from "./data-processor.js";
 import { findFiles, watchFiles, writeFile } from "./file-system.js";
 import { Diagnostic } from "./index.js";
@@ -186,8 +187,17 @@ export class Project {
 
 	static async create(options: Project.Options): Promise<Project> {
 		const plugins: Plugin[] = [];
+
+		let customDataAdapter: DataAdapter | undefined = undefined;
 		const pluginSetupContext: PluginSetupContext = {
 			config: options.config,
+
+			setDataAdapter(dataAdapter) {
+				if (dataAdapter !== undefined) {
+					throw new Error("only one custom data adapter can be set.");
+				}
+				customDataAdapter = dataAdapter;
+			},
 		};
 
 		for (const pluginConfig of options.config.plugins) {
@@ -198,7 +208,7 @@ export class Project {
 		}
 
 		const dataProcessor = new DataProcessor({
-			dataAdapter: options.dataAdapter,
+			dataAdapter: customDataAdapter ?? new DefaultDataAdapter(options.config.data),
 		});
 
 		return new Project(options, dataProcessor, plugins);
@@ -208,7 +218,6 @@ export class Project {
 export declare namespace Project {
 	export interface Options {
 		config: Config;
-		dataAdapter: DataAdapter;
 	}
 
 	export interface WatchOptions {

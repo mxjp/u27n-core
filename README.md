@@ -16,8 +16,6 @@ U27N is a _universal internationalization_ framework that aims to provide an end
   + [Concurrent Locales](#concurrent-locales)
 + [Toolchain API](#toolchain-api)
   + [Configuration](#configuration-1)
-  + [Data Adapters](#data-adapters)
-    + [Custom Data Adapters](#custom-data-adapters)
   + [Projects](#projects)
 + [Changelog](./CHANGELOG.md)
 
@@ -33,16 +31,9 @@ U27N is a _universal internationalization_ framework that aims to provide an end
 The configuration is stored in a file usually called **u27n.json**:
 ```js
 {
-  // Optional. Configure how translation data is stored.
-  "data": {
-    // Optional. If specified, the adapter exported by this module
-    // is used instead of the default one. Additional options depend
-    // on the type of adapter used.
-    "adapter": "./custom-adapter.js",
-
-    // Optional. The filename where to store translation data:
-    "filename": "./u27n-data.json"
-  },
+  // Optional. The filename where to store translation data.
+  // This filename may be used differently or not at all if a custom data adapter is used.
+  "data": "./u27n-data.json",
 
   // Optional. The namespace for this project. This should be
   // a unique string such as an npm package name.
@@ -288,27 +279,6 @@ const config = await Config.fromJson({
     "de"
   ],
 }, process.cwd());
-```
-
-## Data Adapters
-Data adapters provide an abstraction over how translation data for a project is stored. Unless configured otherwise, the included default adapter is used which stores all translation data in a single file called `u27n-data.json`.
-```ts
-// Create a data adapter as configured:
-const dataAdapter = await DataAdapter.create({
-  config,
-});
-```
-
-### Custom Data Adapters
-Custom data adapters can be instanced directly or via the config by specifying a module that implements a `createDataAdapter` function. The [default data adapter](./src/data-adapter-default.ts) provides a good example how to implement a custom adapter.
-```ts
-// u27n.json:
-{
-  data: {
-    adapter: "./custom-adapter.js",
-    message: "Hello World!",
-  },
-}
 ```
 
 ## Projects

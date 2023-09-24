@@ -5,7 +5,6 @@ import colors from "ansi-colors";
 import parseArgv from "yargs-parser";
 
 import { Config } from "./config.js";
-import { DataAdapter } from "./data-adapter.js";
 import { Diagnostic, DiagnosticSeverity, getDiagnosticLocations, getDiagnosticMessage, getDiagnosticSeverity } from "./diagnostics.js";
 import { Project } from "./project.js";
 
@@ -40,13 +39,8 @@ const diagnosticColors = new Map<DiagnosticSeverity, colors.StyleFunction>([
 	const configFilename = resolve(args.config ?? "u27n.json");
 	const config = await Config.read(configFilename);
 
-	const dataAdapter = await DataAdapter.create({
-		config,
-	});
-
 	const project = await Project.create({
 		config,
-		dataAdapter,
 	});
 
 	function handleDiagnostic(diagnostic: Diagnostic) {
