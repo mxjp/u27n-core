@@ -1,6 +1,7 @@
 # Changelog
 
 ## 3.0
++ **Breaking:** Rename `SourceUpdates` to `TextReplacements`.
 + **Breaking:** Rewrite source interface to support different types of content.
 + **Breaking:** Directly export `filenameToSourceId` and `sourceIdToFilename`.
 + **Breaking:** Replace translation data handling and related api with data adapters.
