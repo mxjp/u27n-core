@@ -229,6 +229,8 @@ Interpolation and formatting can also be used in plural values:
 t(["{count} apple", "{count} apples"], { count: 42 });
 ```
 
+Note, that the number and order of plural forms depends on the locale. Pluralization is supported for all locales defined in [this file](./resources/plurals.json5).
+
 ## Concurrent Locales
 For things like server side rendering, it may be necessary to switch between locales depending on external factors e.g. which user makes a request. For this purpose, it is recommended to use multiple controllers in parallel and pass the translation function for the correct locale to the part of the application that needs to be translated:
 ```tsx
