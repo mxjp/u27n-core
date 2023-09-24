@@ -65,14 +65,34 @@ export declare namespace Source {
 	}
 
 	export interface UpdateResult {
+		/**
+		 * Indicates if the content is modified by this update.
+		 *
+		 * If this is true, one of {@link content}, {@link textContent} or {@link persist} should be defined.
+		 */
+		modified: boolean;
+
 		/** A map of all fragment ids to fragment updates (also including fragments that have not been updated) */
 		fragments: Map<string, FragmentUpdate>;
-		/** A function to write modified source content to disk or undefined if this update does not contain any modifications */
-		persist?: PersistUpdateCallback | undefined;
-	}
 
-	export interface PersistUpdateCallback {
-		(filename: string): Promise<void>;
+		/**
+		 * The modified source content.
+		 *
+		 * This is prioritized over {@link textContent} if implemented.
+		 */
+		content?: Buffer;
+
+		/**
+		 * The modified source content as text.
+		 */
+		textContent?: string;
+
+		/**
+		 * Called to write the modified source to disk.
+		 *
+		 * This is prioritized over {@link content} and {@link textContent} if implemented.
+		 */
+		persist?(): Promise<void>;
 	}
 
 	export interface FragmentUpdate {

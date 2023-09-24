@@ -1,5 +1,3 @@
-import { writeFile } from "node:fs/promises";
-
 import { DataAdapter } from "../../src/data-adapter.js";
 import { Source } from "../../src/source.js";
 import { TextSource } from "../../src/text-source.js";
@@ -93,26 +91,21 @@ export class TestSource extends TextSource {
 			}
 		});
 
-		let persist: Source.PersistUpdateCallback | undefined = undefined;
-		if (modified) {
-			let content = "";
-			let offset = this.content.length;
-			for (let i = updates.length - 1; i >= 0; i--) {
-				const [update, uniqueId] = updates[i];
-				content = `${formatValue(update.value)} id=${uniqueId}${this.content.slice(update.end, offset)}${content}`;
-				offset = update.start;
-			}
-			if (offset > 0) {
-				content = this.content.slice(0, offset) + content;
-			}
-			persist = async filename => {
-				await writeFile(filename, content, "utf-8");
-			};
+		let textContent = "";
+		let offset = this.content.length;
+		for (let i = updates.length - 1; i >= 0; i--) {
+			const [update, uniqueId] = updates[i];
+			textContent = `${formatValue(update.value)} id=${uniqueId}${this.content.slice(update.end, offset)}${textContent}`;
+			offset = update.start;
+		}
+		if (offset > 0) {
+			textContent = this.content.slice(0, offset) + textContent;
 		}
 
 		return {
+			modified,
 			fragments,
-			persist,
+			textContent,
 		};
 	}
 }

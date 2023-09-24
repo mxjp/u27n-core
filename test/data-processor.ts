@@ -3,10 +3,18 @@ import test from "ava";
 import { DataAdapter } from "../src/data-adapter.js";
 import { DataProcessor } from "../src/data-processor.js";
 import { LocaleData } from "../src/runtime/locale-data.js";
+import { Source } from "../src/source.js";
 import { clearModified, createInertAdapter, exportDataJson, fragment, importDataJson, verifyFragments } from "./_utility/data-adapter.js";
-import { verifySourceUpdates } from "./_utility/fs.js";
 import { TestSource } from "./_utility/test-source.js";
 import { unindent } from "./_utility/unindent.js";
+
+export function textContent(map: Map<string, Source.UpdateResult>): Record<string, string | undefined> {
+	return Object.fromEntries(
+		Array
+			.from(map)
+			.map(([sourceId, result]) => [sourceId, result.textContent]),
+	);
+}
 
 test(`${DataProcessor.prototype.applyUpdate.name} (empty update)`, async t => {
 	const dataProcessor = new DataProcessor({
@@ -156,7 +164,7 @@ test(`${DataProcessor.prototype.applyUpdate.name} (missing id)`, async t => {
 		42: { sourceId: "a", value: "foo" },
 	});
 
-	await verifySourceUpdates(__filename, t, result.modifiedSources, {
+	t.deepEqual(textContent(result.modifiedSources), {
 		a: unindent(`
 			foo id=42
 			bar id=1
@@ -185,7 +193,7 @@ test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, multiple source
 		2: { sourceId: "b", value: "bar" },
 	});
 
-	await verifySourceUpdates(__filename, t, result.modifiedSources, {
+	t.deepEqual(textContent(result.modifiedSources), {
 		a: unindent(`
 			foo id=1
 		`),
@@ -214,7 +222,7 @@ test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, single source, 
 		1: { sourceId: "a", value: "bar" },
 	});
 
-	await verifySourceUpdates(__filename, t, result.modifiedSources, {
+	t.deepEqual(textContent(result.modifiedSources), {
 		a: unindent(`
 			foo id=0
 			bar id=1
@@ -247,7 +255,7 @@ test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, multiple source
 		1: { sourceId: "a", value: "foo" },
 	});
 
-	await verifySourceUpdates(__filename, t, result.modifiedSources, {
+	t.deepEqual(textContent(result.modifiedSources), {
 		a: unindent(`
 			foo id=1
 		`),
@@ -277,7 +285,7 @@ test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, single source, 
 		1: { sourceId: "a", value: "bar" },
 	});
 
-	await verifySourceUpdates(__filename, t, result.modifiedSources, {
+	t.deepEqual(textContent(result.modifiedSources), {
 		a: unindent(`
 			foo id=0
 			bar id=1
@@ -310,7 +318,7 @@ test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, multiple source
 		2: { sourceId: "b", value: "bar" },
 	});
 
-	await verifySourceUpdates(__filename, t, result.modifiedSources, {
+	t.deepEqual(textContent(result.modifiedSources), {
 		a: unindent(`
 			foo id=1
 		`),
@@ -343,7 +351,7 @@ test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, single source, 
 		1: { sourceId: "a", value: "bar" },
 	});
 
-	await verifySourceUpdates(__filename, t, result.modifiedSources, {
+	t.deepEqual(textContent(result.modifiedSources), {
 		a: unindent(`
 			foo id=0
 			bar id=1

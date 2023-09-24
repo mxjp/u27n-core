@@ -65,9 +65,9 @@ export class Project {
 
 				if (options.modify) {
 					await this.dataProcessor.dataAdapter.persist();
-					for (const [sourceId, persist] of result.modifiedSources) {
+					for (const [sourceId, update] of result.modifiedSources) {
 						const filename = sourceIdToFilename(this.config.context, sourceId);
-						await persist(filename);
+						await persistUpdate(filename, update);
 					}
 				}
 
@@ -119,9 +119,9 @@ export class Project {
 
 		if (options.modify) {
 			await this.dataProcessor.dataAdapter.persist();
-			for (const [sourceId, persist] of result.modifiedSources) {
+			for (const [sourceId, update] of result.modifiedSources) {
 				const filename = sourceIdToFilename(this.config.context, sourceId);
-				await persist(filename);
+				await persistUpdate(filename, update);
 			}
 		} else if (this.dataProcessor.dataAdapter.modified || result.modifiedSources.size > 0) {
 			diagnostics.push({
@@ -229,6 +229,16 @@ export class Project {
 		});
 
 		return new Project(options, dataProcessor, plugins);
+	}
+}
+
+async function persistUpdate(filename: string, update: Source.UpdateResult): Promise<void> {
+	if (update.persist !== undefined) {
+		await update.persist();
+	} else if (update.content !== undefined) {
+		await writeFile(filename, update.content);
+	} else if (update.textContent !== undefined) {
+		await writeFile(filename, Buffer.from(update.textContent, "utf-8"));
 	}
 }
 

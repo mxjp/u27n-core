@@ -54,7 +54,7 @@ export class DataProcessor {
 	 */
 	applyUpdate(update: DataProcessor.Update): DataProcessor.UpdateResult {
 		const modify = update.modify ?? true;
-		const modifiedSources = new Map<string, Source.PersistUpdateCallback>();
+		const modifiedSources = new Map<string, Source.UpdateResult>();
 
 		const discardObsoleteType = update.discardObsolete ?? "all";
 
@@ -85,8 +85,8 @@ export class DataProcessor {
 					},
 				});
 
-				if (updateResult.persist) {
-					modifiedSources.set(sourceId, updateResult.persist);
+				if (updateResult.modified) {
+					modifiedSources.set(sourceId, updateResult);
 				}
 
 				updateResult.fragments.forEach((update, fragmentId) => {
@@ -382,7 +382,7 @@ export declare namespace DataProcessor {
 
 	export interface UpdateResult {
 		/** Map of source ids to update results where the source is modified */
-		modifiedSources: Map<string, Source.PersistUpdateCallback>;
+		modifiedSources: Map<string, Source.UpdateResult>;
 	}
 
 	export interface DiagnosticOptions {
