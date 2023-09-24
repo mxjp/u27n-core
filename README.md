@@ -16,6 +16,9 @@ U27N is a _universal internationalization_ framework that aims to provide an end
   + [Concurrent Locales](#concurrent-locales)
 + [Toolchain API](#toolchain-api)
   + [Configuration](#configuration-1)
+  + [Plugins](#plugins)
+    + [Sources](#sources)
+    + [Data Adapters](#data-adapters)
   + [Projects](#projects)
 + [Changelog](./CHANGELOG.md)
 
@@ -279,6 +282,41 @@ const config = await Config.fromJson({
     "de"
   ],
 }, process.cwd());
+```
+
+## Plugins
+
+### Sources
+Plugins can be used to implement how specific source files are handled. Sources can be implemented manually or
+by extending the [SourceBase](./src/source-base.ts) or [TextSource](./src/text-source.ts) classes.
+```ts
+import { Plugin } from "@u27n/core";
+
+export default class ExamplePlugin implements Plugin {
+  createSource(context: Plugin.CreateSourceContext) {
+    if (context.filename.endsWith(".txt")) {
+      // It is usually required to read the text content of the source file from disk:
+      const content = await context.getTextContent();
+
+      // The result must be an object implementing the "Source" interface or
+      // undefined, to indicate that this plugin can't handle the specified file:
+      return new ExampleSource(content);
+    }
+  }
+}
+```
+
+### Data Adapters
+Data adapters provide the interface between a project and the translation data storage. The [default data adapter](./src/data-adapter-default.ts) stores all translation data in a single git friendly file usually called `u27n-data.json`. Plugins have the ability to overwrite the project's data adapter during initialization.
+```ts
+import { Plugin } from "@u27n/core";
+
+export default class ExamplePlugin implements Plugin {
+  setup(context: Plugin.Context) {
+    // "customAdapter" must be an object implementing the "DataAdapter" interface.
+    context.setDataAdapter(customAdapter);
+  }
+}
 ```
 
 ## Projects
