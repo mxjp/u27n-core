@@ -1,26 +1,6 @@
 import type { Config } from "./config.js";
 import { DataAdapter } from "./data-adapter.js";
-import { DataProcessor } from "./data-processor.js";
 import type { Source } from "./source.js";
-
-export interface PluginSetupContext {
-	/** The global configuration. */
-	readonly config: Config;
-
-	/**
-	 * Set the data adapter for the curren project.
-	 *
-	 * This can be called once per project. Any consecutive call will throw an error.
-	 */
-	setDataAdapter(dataAdapter: DataAdapter): void;
-}
-
-export interface PluginContext {
-	/** The global configuration. */
-	readonly config: Config;
-	/** The global data processor. */
-	readonly dataProcessor: DataProcessor;
-}
 
 export interface Plugin {
 	/**
@@ -29,20 +9,50 @@ export interface Plugin {
 	 * @param context The plugin context.
 	 * @param config The plugin configuration.
 	 */
-	setup?(context: PluginSetupContext, config: unknown): void | Promise<void>;
+	setup?(context: Plugin.Context, config: unknown): void | Promise<void>;
 
 	/**
 	 * Called to try to create s source for the specified file.
 	 *
 	 * @param filename The absolute filename.
-	 * @param content The content of the file.
-	 * @param context The plugin context.
+	 * @param pluginContext The plugin context.
 	 *
 	 * @returns A source instance or undefined if this plugin can not handle the specified file type.
 	 */
-	createSource?(filename: string, content: Buffer, context: PluginContext): Source | undefined | void;
+	createSource?(context: Plugin.CreateSourceContext): Source | undefined | void | Promise<Source | undefined | void>;
 }
 
-export interface PluginModule {
-	default: (new () => Plugin) | Plugin;
+export declare namespace Plugin {
+	export interface Context {
+		/** The global configuration. */
+		readonly config: Config;
+
+		/**
+		 * Set the data adapter for the curren project.
+		 *
+		 * This can be called once per project. Any consecutive call will throw an error.
+		 */
+		setDataAdapter(dataAdapter: DataAdapter): void;
+	}
+
+	export interface Module {
+		default: (new () => Plugin) | Plugin;
+	}
+
+	export interface CreateSourceContext {
+		/**
+		 * The filename of the source.
+		 */
+		get filename(): string;
+
+		/**
+		 * Read and cache the file content.
+		 */
+		getContent: () => Promise<Buffer>;
+
+		/**
+		 * Read and cache the file content as UTF-8 encoded text.
+		 */
+		getTextContent: () => Promise<string>;
+	}
 }

@@ -4,9 +4,11 @@ import { LineMap } from "@mpt/line-map";
 import test from "ava";
 
 import { Source } from "../src/source.js";
+import { filenameToSourceId, sourceIdToFilename } from "../src/source-id.js";
+import { TextSource } from "../src/text-source.js";
 
 test("lineMap", t => {
-	const source = new Source("foo\nbar");
+	const source = new TextSource("foo\nbar");
 	t.true(source.lineMap instanceof LineMap);
 	t.is(source.lineMap.text, source.content);
 	t.deepEqual(source.lineMap.offsets, [0, 4]);
@@ -37,7 +39,7 @@ test("fragments / fragmentMap", t => {
 		},
 	];
 
-	const source = new class extends Source {
+	const source = new class extends TextSource {
 		public parse(): Source.Fragment[] {
 			return fragments;
 		}
@@ -51,11 +53,11 @@ test("fragments / fragmentMap", t => {
 });
 
 test("filenameToSourceId", t => {
-	t.is(Source.filenameToSourceId("/foo", "/foo/bar/baz"), "bar/baz");
-	t.is(Source.filenameToSourceId("/foo", "/bar"), "../bar");
+	t.is(filenameToSourceId("/foo", "/foo/bar/baz"), "bar/baz");
+	t.is(filenameToSourceId("/foo", "/bar"), "../bar");
 });
 
 test("sourceIdToFilename", t => {
-	t.is(Source.sourceIdToFilename("/foo", "bar/baz"), join("/foo", "bar/baz"));
-	t.is(Source.sourceIdToFilename("/foo", "../bar"), join("/foo", "../bar"));
+	t.is(sourceIdToFilename("/foo", "bar/baz"), join("/foo", "bar/baz"));
+	t.is(sourceIdToFilename("/foo", "../bar"), join("/foo", "../bar"));
 });

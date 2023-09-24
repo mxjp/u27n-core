@@ -1,31 +1,21 @@
-import { isAbsolute, join, normalize, relative } from "node:path";
-
-import { LineMap } from "@mpt/line-map";
-
 import { DataAdapter } from "./data-adapter.js";
-import type { FragmentIdGenerator } from "./fragment-id-generator.js";
+import { FragmentIdGenerator } from "./fragment-id-generator.js";
 
-export class Source<F extends Source.Fragment = Source.Fragment> {
-	readonly content: string;
-	readonly fragmentIdGenerator?: FragmentIdGenerator;
-
-	#lineMap: LineMap | undefined = undefined;
-	#fragments: F[] | undefined = undefined;
-	#fragmentMap: Map<string, F> | undefined = undefined;
-
-	constructor(content: string) {
-		this.content = content;
-	}
-
+/**
+ * Represents a source file.
+ */
+export interface Source<F extends Source.Fragment = Source.Fragment> {
 	/**
-	 * Called to parse all fragments in this source.
+	 * If implemented, this fragment id generator is used by the
+	 * {@link Source.UpdateContext.updateId} function instead of the default generator.
 	 */
-	protected parse(): F[] {
-		return [];
-	}
+	readonly fragmentIdGenerator?: FragmentIdGenerator;
 
 	/**
 	 * Called to create an updated version of this source.
+	 *
+	 * An update implementation should be omitted, if
+	 * it doesn't make sense for the type of source.
 	 */
 	update?(context: Source.UpdateContext): Source.UpdateResult;
 
@@ -39,65 +29,16 @@ export class Source<F extends Source.Fragment = Source.Fragment> {
 	getOutputFilenames?(): string[];
 
 	/**
-	 * A line map for this source that can be used
-	 * for converting between line/character positions and offsets.
+	 * Get an array of all fragments in this source.
 	 */
-	get lineMap(): LineMap {
-		if (this.#lineMap === undefined) {
-			this.#lineMap = new LineMap(this.content);
-		}
-		return this.#lineMap;
-	}
+	get fragments(): readonly F[];
 
 	/**
-	 * An array of all fragments in this source.
-	 */
-	get fragments(): readonly F[] {
-		if (this.#fragments === undefined) {
-			this.#fragments = this.parse ? this.parse() : [];
-		}
-		return this.#fragments;
-	}
-
-	/**
-	 * A map of ids to fragments.
+	 * Get a map of ids to fragments.
 	 *
 	 * Note that this may not contain all fragments if there are any duplicate fragment ids.
 	 */
-	get fragmentMap(): ReadonlyMap<string, F> {
-		if (this.#fragmentMap === undefined) {
-			const map = new Map<string, F>();
-			const fragments = this.fragments;
-			for (let i = 0; i < fragments.length; i++) {
-				const fragment = fragments[i];
-				if (fragment.fragmentId !== undefined) {
-					map.set(fragment.fragmentId, fragment);
-				}
-			}
-			this.#fragmentMap = map;
-		}
-		return this.#fragmentMap;
-	}
-
-	/**
-	 * Convert an absolute or relative filename to a relative source filename that can be used in a translation data object.
-	 *
-	 * @param rootDir The absolute path of the project root directory.
-	 * @param filename The absolute or relative filename of the source.
-	 */
-	static filenameToSourceId(rootDir: string, filename: string): string {
-		return (isAbsolute(filename) ? relative(rootDir, filename) : normalize(filename)).replace(/\\/g, "/");
-	}
-
-	/**
-	 * Convert a relative source filename to an absolute filename.
-	 *
-	 * @param rootDir The absolute path of the project root directory.
-	 * @param sourceId The source id.
-	 */
-	static sourceIdToFilename(rootDir: string, sourceId: string): string {
-		return join(rootDir, sourceId);
-	}
+	get fragmentMap(): ReadonlyMap<string, F>;
 }
 
 export declare namespace Source {
@@ -124,12 +65,14 @@ export declare namespace Source {
 	}
 
 	export interface UpdateResult {
-		/** True if the source content has been modified */
-		modified: boolean;
-		/** The update source content */
-		content: string;
 		/** A map of all fragment ids to fragment updates (also including fragments that have not been updated) */
 		fragments: Map<string, FragmentUpdate>;
+		/** A function to write modified source content to disk or undefined if this update does not contain any modifications */
+		persist?: PersistUpdateCallback | undefined;
+	}
+
+	export interface PersistUpdateCallback {
+		(filename: string): Promise<void>;
 	}
 
 	export interface FragmentUpdate {

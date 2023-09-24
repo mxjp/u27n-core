@@ -10,3 +10,5 @@ export * from "./plugin.js";
 export * from "./plural-info.js";
 export * from "./project.js";
 export * from "./source.js";
+export * from "./source-id.js";
+export * from "./text-source.js";

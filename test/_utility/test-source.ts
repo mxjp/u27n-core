@@ -1,5 +1,8 @@
+import { writeFile } from "node:fs/promises";
+
 import { DataAdapter } from "../../src/data-adapter.js";
 import { Source } from "../../src/source.js";
+import { TextSource } from "../../src/text-source.js";
 import { unindent } from "./unindent.js";
 
 const FRAGMENT_REGEXP = /(\s*)((?:[^=\n])+)(?: id=([^\n]+))?(\n|$)/y;
@@ -39,7 +42,7 @@ function formatValue(value: DataAdapter.Value): string {
  * plural: foo bar id=7
  * ```
  */
-export class TestSource extends Source {
+export class TestSource extends TextSource {
 	public constructor(content: string, managed = true) {
 		super(unindent(content).trim());
 		if (!managed) {
@@ -90,21 +93,26 @@ export class TestSource extends Source {
 			}
 		});
 
-		let content = "";
-		let offset = this.content.length;
-		for (let i = updates.length - 1; i >= 0; i--) {
-			const [update, uniqueId] = updates[i];
-			content = `${formatValue(update.value)} id=${uniqueId}${this.content.slice(update.end, offset)}${content}`;
-			offset = update.start;
-		}
-		if (offset > 0) {
-			content = this.content.slice(0, offset) + content;
+		let persist: Source.PersistUpdateCallback | undefined = undefined;
+		if (modified) {
+			let content = "";
+			let offset = this.content.length;
+			for (let i = updates.length - 1; i >= 0; i--) {
+				const [update, uniqueId] = updates[i];
+				content = `${formatValue(update.value)} id=${uniqueId}${this.content.slice(update.end, offset)}${content}`;
+				offset = update.start;
+			}
+			if (offset > 0) {
+				content = this.content.slice(0, offset) + content;
+			}
+			persist = async filename => {
+				await writeFile(filename, content, "utf-8");
+			};
 		}
 
 		return {
-			modified,
-			content,
 			fragments,
+			persist,
 		};
 	}
 }

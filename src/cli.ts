@@ -7,6 +7,7 @@ import parseArgv from "yargs-parser";
 import { Config } from "./config.js";
 import { Diagnostic, DiagnosticSeverity, getDiagnosticLocations, getDiagnosticMessage, getDiagnosticSeverity } from "./diagnostics.js";
 import { Project } from "./project.js";
+import { TextSource } from "./text-source.js";
 
 interface Args extends parseArgv.Arguments {
 	config?: string;
@@ -64,11 +65,13 @@ const diagnosticColors = new Map<DiagnosticSeverity, colors.StyleFunction>([
 
 					case "fragment":
 						text += `\n  in ${formatFilename(location.filename)}`;
-						if (location.source) {
+						if (location.source instanceof TextSource) {
 							const position = location.source.lineMap.getPosition(location.start);
 							if (position !== null) {
 								text += `:${position.line + 1}:${position.character + 1}`;
 							}
+						} else {
+							text += `[${location.start}, ${location.end}]`;
 						}
 						break;
 				}

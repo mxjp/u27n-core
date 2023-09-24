@@ -4,6 +4,7 @@ import { DataAdapter } from "../src/data-adapter.js";
 import { DataProcessor } from "../src/data-processor.js";
 import { LocaleData } from "../src/runtime/locale-data.js";
 import { clearModified, createInertAdapter, exportDataJson, fragment, importDataJson, verifyFragments } from "./_utility/data-adapter.js";
+import { verifySourceUpdates } from "./_utility/fs.js";
 import { TestSource } from "./_utility/test-source.js";
 import { unindent } from "./_utility/unindent.js";
 
@@ -154,19 +155,18 @@ test(`${DataProcessor.prototype.applyUpdate.name} (missing id)`, async t => {
 		1: { sourceId: "a", value: "bar" },
 		42: { sourceId: "a", value: "foo" },
 	});
-	t.deepEqual(result.modifiedSources, new Map([
-		["a", unindent(`
+
+	await verifySourceUpdates(__filename, t, result.modifiedSources, {
+		a: unindent(`
 			foo id=42
 			bar id=1
-		`)],
-	]));
+		`),
+	});
 });
 
 test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, multiple sources, no data)`, async t => {
 	const processor = new DataProcessor({
-		dataAdapter: createInertAdapter({
-
-		}),
+		dataAdapter: createInertAdapter({}),
 	});
 	const result = processor.applyUpdate({
 		updatedSources: new Map([
@@ -185,14 +185,14 @@ test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, multiple source
 		2: { sourceId: "b", value: "bar" },
 	});
 
-	t.deepEqual(result.modifiedSources, new Map([
-		["a", unindent(`
+	await verifySourceUpdates(__filename, t, result.modifiedSources, {
+		a: unindent(`
 			foo id=1
-		`)],
-		["b", unindent(`
+		`),
+		b: unindent(`
 			bar id=2
-		`)],
-	]));
+		`),
+	});
 });
 
 test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, single source, no data)`, async t => {
@@ -214,12 +214,12 @@ test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, single source, 
 		1: { sourceId: "a", value: "bar" },
 	});
 
-	t.deepEqual(result.modifiedSources, new Map([
-		["a", unindent(`
+	await verifySourceUpdates(__filename, t, result.modifiedSources, {
+		a: unindent(`
 			foo id=0
 			bar id=1
-		`)],
-	]));
+		`),
+	});
 });
 
 test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, multiple sources, data in sync)`, async t => {
@@ -247,11 +247,11 @@ test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, multiple source
 		1: { sourceId: "a", value: "foo" },
 	});
 
-	t.deepEqual(result.modifiedSources, new Map([
-		["a", unindent(`
+	await verifySourceUpdates(__filename, t, result.modifiedSources, {
+		a: unindent(`
 			foo id=1
-		`)],
-	]));
+		`),
+	});
 });
 
 test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, single source, data in sync)`, async t => {
@@ -277,12 +277,12 @@ test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, single source, 
 		1: { sourceId: "a", value: "bar" },
 	});
 
-	t.deepEqual(result.modifiedSources, new Map([
-		["a", unindent(`
+	await verifySourceUpdates(__filename, t, result.modifiedSources, {
+		a: unindent(`
 			foo id=0
 			bar id=1
-		`)],
-	]));
+		`),
+	});
 });
 
 test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, multiple sources, data out of sync)`, async t => {
@@ -310,14 +310,14 @@ test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, multiple source
 		2: { sourceId: "b", value: "bar" },
 	});
 
-	t.deepEqual(result.modifiedSources, new Map([
-		["a", unindent(`
+	await verifySourceUpdates(__filename, t, result.modifiedSources, {
+		a: unindent(`
 			foo id=1
-		`)],
-		["b", unindent(`
+		`),
+		b: unindent(`
 			bar id=2
-		`)],
-	]));
+		`),
+	});
 });
 
 test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, single source, data out of sync)`, async t => {
@@ -343,12 +343,12 @@ test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, single source, 
 		1: { sourceId: "a", value: "bar" },
 	});
 
-	t.deepEqual(result.modifiedSources, new Map([
-		["a", unindent(`
+	await verifySourceUpdates(__filename, t, result.modifiedSources, {
+		a: unindent(`
 			foo id=0
 			bar id=1
-		`)],
-	]));
+		`),
+	});
 });
 
 test(`${DataProcessor.prototype.applyUpdate.name} (remove source)`, t => {

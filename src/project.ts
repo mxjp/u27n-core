@@ -7,15 +7,15 @@ import { DataProcessor } from "./data-processor.js";
 import { findFiles, watchFiles, writeFile } from "./file-system.js";
 import { Diagnostic } from "./index.js";
 import { Manifest } from "./manifest.js";
-import { Plugin, PluginContext, PluginModule, PluginSetupContext } from "./plugin.js";
+import { Plugin } from "./plugin.js";
 import { Source } from "./source.js";
+import { filenameToSourceId, sourceIdToFilename } from "./source-id.js";
 
 export class Project {
 	readonly config: Config;
 	readonly dataProcessor: DataProcessor;
 
 	readonly #createSourcePlugins: Plugin[] = [];
-	readonly #pluginContext: PluginContext;
 
 	private constructor(
 		options: Project.Options,
@@ -25,10 +25,6 @@ export class Project {
 		this.config = options.config;
 		this.dataProcessor = dataProcessor;
 		this.#createSourcePlugins = plugins.filter(plugin => plugin.createSource);
-		this.#pluginContext = {
-			config: options.config,
-			dataProcessor,
-		};
 	}
 
 	watch(options: Project.WatchOptions): () => Promise<void> {
@@ -45,7 +41,7 @@ export class Project {
 				const removedSources = new Set<string>();
 				for (const filename of changes.updated) {
 					const source = await this.#createSource(filename);
-					const sourceId = Source.filenameToSourceId(this.config.context, filename);
+					const sourceId = filenameToSourceId(this.config.context, filename);
 					if (source === undefined) {
 						diagnostics.push({
 							type: "unsupportedSource",
@@ -57,7 +53,7 @@ export class Project {
 				}
 
 				for (const filename of changes.removed) {
-					removedSources.add(Source.filenameToSourceId(this.config.context, filename));
+					removedSources.add(filenameToSourceId(this.config.context, filename));
 				}
 
 				const result = this.dataProcessor.applyUpdate({
@@ -69,8 +65,9 @@ export class Project {
 
 				if (options.modify) {
 					await this.dataProcessor.dataAdapter.persist();
-					for (const [sourceId, content] of result.modifiedSources) {
-						await writeFile(Source.sourceIdToFilename(this.config.context, sourceId), Buffer.from(content, "utf-8"));
+					for (const [sourceId, persist] of result.modifiedSources) {
+						const filename = sourceIdToFilename(this.config.context, sourceId);
+						await persist(filename);
 					}
 				}
 
@@ -93,8 +90,6 @@ export class Project {
 	}
 
 	async run(options: Project.RunOptions): Promise<Project.RunResult> {
-		console.log("Running project.");
-
 		let diagnostics: Diagnostic[] = [];
 
 		await this.dataProcessor.dataAdapter.reload();
@@ -105,7 +100,7 @@ export class Project {
 			patterns: this.config.include,
 		})) {
 			const source = await this.#createSource(filename);
-			const sourceId = Source.filenameToSourceId(this.config.context, filename);
+			const sourceId = filenameToSourceId(this.config.context, filename);
 			if (source === undefined) {
 				diagnostics.push({
 					type: "unsupportedSource",
@@ -124,8 +119,9 @@ export class Project {
 
 		if (options.modify) {
 			await this.dataProcessor.dataAdapter.persist();
-			for (const [sourceId, content] of result.modifiedSources) {
-				await writeFile(Source.sourceIdToFilename(this.config.context, sourceId), Buffer.from(content, "utf-8"));
+			for (const [sourceId, persist] of result.modifiedSources) {
+				const filename = sourceIdToFilename(this.config.context, sourceId);
+				await persist(filename);
 			}
 		} else if (this.dataProcessor.dataAdapter.modified || result.modifiedSources.size > 0) {
 			diagnostics.push({
@@ -176,9 +172,30 @@ export class Project {
 	}
 
 	async #createSource(filename: string): Promise<Source | undefined> {
-		const content = await readFile(filename);
+		let content: Promise<Buffer> | undefined = undefined;
+		let textContent: Promise<string> | undefined = undefined;
+
+		async function getContent(): Promise<Buffer> {
+			if (content === undefined) {
+				content = readFile(filename);
+			}
+			return content;
+		}
+
+		async function getTextContent(): Promise<string> {
+			if (textContent === undefined) {
+				textContent = getContent().then(content => content.toString("utf-8"));
+			}
+			return textContent;
+		}
+
+		const context: Plugin.CreateSourceContext = {
+			filename,
+			getContent,
+			getTextContent,
+		};
 		for (const plugin of this.#createSourcePlugins) {
-			const source = plugin.createSource?.(filename, content, this.#pluginContext);
+			const source = await plugin.createSource?.(context);
 			if (source) {
 				return source;
 			}
@@ -189,7 +206,7 @@ export class Project {
 		const plugins: Plugin[] = [];
 
 		let customDataAdapter: DataAdapter | undefined = undefined;
-		const pluginSetupContext: PluginSetupContext = {
+		const context: Plugin.Context = {
 			config: options.config,
 
 			setDataAdapter(dataAdapter) {
@@ -201,9 +218,9 @@ export class Project {
 		};
 
 		for (const pluginConfig of options.config.plugins) {
-			const module = await import(pluginConfig.entry) as PluginModule;
+			const module = await import(pluginConfig.entry) as Plugin.Module;
 			const plugin = typeof module.default === "function" ? new module.default() : module.default;
-			await plugin.setup?.(pluginSetupContext, pluginConfig.config);
+			await plugin.setup?.(context, pluginConfig.config);
 			plugins.push(plugin);
 		}
 

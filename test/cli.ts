@@ -10,8 +10,8 @@ import { Manifest } from "../src/manifest.js";
 import { LocaleData } from "../src/runtime/index.js";
 import { fragment, translationData } from "./_utility/data-adapter.js";
 import { exec, execStart } from "./_utility/exec.js";
+import { createFsLayout } from "./_utility/fs.js";
 import { jsonFile } from "./_utility/json-file.js";
-import { createFsLayout } from "./_utility/temp-dir.js";
 import { unindent } from "./_utility/unindent.js";
 import { wait } from "./_utility/wait.js";
 

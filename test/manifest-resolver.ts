@@ -4,7 +4,7 @@ import test from "ava";
 
 import { Manifest } from "../src/manifest.js";
 import { ManifestResolver } from "../src/manifest-resolver.js";
-import { createFsLayout } from "./_utility/temp-dir.js";
+import { createFsLayout } from "./_utility/fs.js";
 
 function createManifest(): Manifest {
 	return {

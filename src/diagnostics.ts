@@ -1,5 +1,6 @@
 import { DataProcessor } from "./data-processor.js";
 import { Source } from "./source.js";
+import { sourceIdToFilename } from "./source-id.js";
 
 export type Diagnostic = {
 	type: "missingTranslations" | "outdatedTranslations" | "unknownTranslations" | "valueTypeMismatch";
@@ -81,7 +82,7 @@ export function getDiagnosticLocations(rootDir: string, dataProcessor: DataProce
 		case "valueTypeMismatch":
 		case "pluralFormCountMismatch": {
 			const source = dataProcessor.getSource(diagnostic.sourceId);
-			const filename = Source.sourceIdToFilename(rootDir, diagnostic.sourceId);
+			const filename = sourceIdToFilename(rootDir, diagnostic.sourceId);
 			if (source === undefined) {
 				return [{
 					type: "file",
@@ -111,7 +112,7 @@ export function getDiagnosticLocations(rootDir: string, dataProcessor: DataProce
 		case "duplicateFragment":
 			return diagnostic.sourceIds.map(sourceId => {
 				const source = dataProcessor.getSource(sourceId);
-				const filename = Source.sourceIdToFilename(rootDir, sourceId);
+				const filename = sourceIdToFilename(rootDir, sourceId);
 				if (source === undefined) {
 					return {
 						type: "file",
@@ -142,7 +143,7 @@ export function getDiagnosticLocations(rootDir: string, dataProcessor: DataProce
 			return [{
 				type: "file",
 				sourceId: diagnostic.sourceId,
-				filename: Source.sourceIdToFilename(rootDir, diagnostic.sourceId),
+				filename: sourceIdToFilename(rootDir, diagnostic.sourceId),
 			}];
 
 		case "unsupportedLocales":

@@ -1,13 +1,10 @@
-import { Plugin, PluginSetupContext } from "../../src/index.js";
+import { Plugin } from "../../src/index.js";
 import { TestSource } from "./test-source.js";
 
 export class TestPlugin implements Plugin {
-	public async setup(_setupContext: PluginSetupContext, _config: TestPlugin.Config): Promise<void> {
-	}
-
-	public createSource(filename: string, content: Buffer): TestSource | undefined {
+	async createSource({ filename, getTextContent }: Plugin.CreateSourceContext): Promise<TestSource | undefined> {
 		if (/\.txt$/.test(filename)) {
-			return new TestSource(content.toString("utf-8")).withOutputFilenames([
+			return new TestSource(await getTextContent()).withOutputFilenames([
 				filename + ".out",
 			]);
 		}

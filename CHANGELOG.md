@@ -1,6 +1,8 @@
 # Changelog
 
 ## 3.0
++ **Breaking:** Rewrite source interface to support different types of content.
++ **Breaking:** Directly export `filenameToSourceId` and `sourceIdToFilename`.
 + **Breaking:** Replace translation data handling and related api with data adapters.
 + **Breaking:** Replace strings with Buffers in plugin api.
 + **Breaking:** Remove language server and related api.
