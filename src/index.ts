@@ -1,4 +1,5 @@
 export * from "./config.js";
+export * from "./data-adapter.js";
 export * from "./data-processor.js";
 export * from "./diagnostics.js";
 export * from "./file-system.js";
