@@ -29,6 +29,11 @@
 			"import": "./dist/es/runtime/index.js",
 			"default": "./dist/cjs/runtime/index.js"
 		},
+		"./default-data-adapter": {
+			"module": "./dist/es/data-adapter-default.js",
+			"import": "./dist/es/runtime/data-adapter-default.js",
+			"default": "./dist/cjs/runtime/data-adapter-default.js"
+		},
 		"./resources/": "./resources/"
 	},
 	"bin": {
