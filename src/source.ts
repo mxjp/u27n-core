@@ -2,8 +2,8 @@ import { isAbsolute, join, normalize, relative } from "node:path";
 
 import { LineMap } from "@mpt/line-map";
 
+import { DataAdapter } from "./data-adapter.js";
 import type { FragmentIdGenerator } from "./fragment-id-generator.js";
-import type { TranslationData } from "./translation-data.js";
 
 export class Source<F extends Source.Fragment = Source.Fragment> {
 	readonly content: string;
@@ -105,7 +105,7 @@ export declare namespace Source {
 		/** The id of the fragment or undefined if no id is assigned */
 		fragmentId?: string;
 		/** The value of the fragment or undefined if the current value is invalid for any reason */
-		value: TranslationData.Value;
+		value: DataAdapter.Value;
 		/** False if the fragment is commented out */
 		enabled: boolean;
 		/** The inclusive start offset */
@@ -134,7 +134,7 @@ export declare namespace Source {
 
 	export interface FragmentUpdate {
 		/** The source value of the fragment */
-		value: TranslationData.Value;
+		value: DataAdapter.Value;
 		/** False if the fragment is commented out */
 		enabled: boolean;
 		/** The old id or undefined if the fragment did not have an id */

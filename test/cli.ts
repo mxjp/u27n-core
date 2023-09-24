@@ -4,14 +4,14 @@ import { join, resolve } from "node:path";
 import test from "ava";
 
 import { Config } from "../src/config.js";
+import { DataJson } from "../src/data-adapter-default.js";
 import { Diagnostic, getDiagnosticMessage } from "../src/diagnostics.js";
 import { Manifest } from "../src/manifest.js";
 import { LocaleData } from "../src/runtime/index.js";
-import { TranslationData } from "../src/translation-data.js";
+import { fragment, translationData } from "./_utility/data-adapter.js";
 import { exec, execStart } from "./_utility/exec.js";
 import { jsonFile } from "./_utility/json-file.js";
 import { createFsLayout } from "./_utility/temp-dir.js";
-import { TranslationDataUtility as td } from "./_utility/translation-data.js";
 import { unindent } from "./_utility/unindent.js";
 import { wait } from "./_utility/wait.js";
 
@@ -48,14 +48,14 @@ function configFile(overwrite?: Partial<Config.Json>): Record<string, string> {
 	};
 }
 
-function translationData(data: Partial<TranslationData>): Record<string, string> {
+function translationDataFile(data: Partial<DataJson>): Record<string, string> {
 	return {
-		"u27n-data.json": TranslationData.formatJson(td.translationData(data), true),
+		"u27n-data.json": JSON.stringify(translationData(data), null, "\t") + "\n",
 	};
 }
 
-async function readTranslationData(cwd: string, path = "u27n-data.json"): Promise<TranslationData> {
-	return TranslationData.parseJson(await readFile(join(cwd, path), "utf-8"));
+async function readTranslationData(cwd: string, path = "u27n-data.json"): Promise<DataJson> {
+	return JSON.parse(await readFile(join(cwd, path), "utf-8")) as DataJson;
 }
 
 async function readLocaleData(cwd: string, path = "locale"): Promise<Map<string, LocaleData>> {
@@ -94,9 +94,9 @@ test("sync project", async t => {
 	const modified = new Date().toISOString();
 	const cwd = await createFsLayout(__filename, t, {
 		...configFile(),
-		...translationData({
+		...translationDataFile({
 			fragments: {
-				0: td.fragment({
+				0: fragment({
 					value: "foo",
 					sourceId: "src/foo.txt",
 					modified,
@@ -144,7 +144,7 @@ test("sync project", async t => {
 test("out of sync project", async t => {
 	const cwd = await createFsLayout(__filename, t, {
 		...configFile(),
-		...translationData({}),
+		...translationDataFile({}),
 		src: {
 			"foo.txt": unindent(`
 				foo id=0

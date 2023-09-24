@@ -1,15 +1,16 @@
+import { readFile } from "node:fs/promises";
+
 import { Config } from "./config.js";
+import { DataAdapter } from "./data-adapter.js";
 import { DataProcessor } from "./data-processor.js";
+import { findFiles, watchFiles, writeFile } from "./file-system.js";
 import { Diagnostic } from "./index.js";
 import { Manifest } from "./manifest.js";
 import { Plugin, PluginContext, PluginModule, PluginSetupContext } from "./plugin.js";
 import { Source } from "./source.js";
-import { TranslationData } from "./translation-data.js";
-import { FileSystem } from "./utility/file-system.js";
 
 export class Project {
 	readonly config: Config;
-	readonly fileSystem: FileSystem;
 	readonly dataProcessor: DataProcessor;
 
 	readonly #plugins: Plugin[] = [];
@@ -21,7 +22,6 @@ export class Project {
 		plugins: Plugin[],
 	) {
 		this.config = options.config;
-		this.fileSystem = options.fileSystem;
 		this.dataProcessor = dataProcessor;
 		this.#plugins = plugins;
 		this.#pluginContext = {
@@ -31,61 +31,45 @@ export class Project {
 	}
 
 	watch(options: Project.WatchOptions): () => Promise<void> {
-		return this.fileSystem.watchFiles({
+		return watchFiles({
 			cwd: this.config.context,
-			patterns: [
-				this.config.translationData.filename,
-				...this.config.include,
-			],
+			patterns: this.config.include,
 			delay: options.delay,
 			onError: options.onError,
 			onChange: async changes => {
+				await this.dataProcessor.dataAdapter.reload();
+
 				let diagnostics: Diagnostic[] = [];
 				const updatedSources = new Map<string, Source>();
 				const removedSources = new Set<string>();
-				let translationData: TranslationData | undefined = undefined;
-
 				for (const filename of changes.updated) {
-					if (filename === this.config.translationData.filename) {
-						const translationDataJson = await this.fileSystem.readOptionalFile(this.config.translationData.filename);
-						if (translationDataJson !== undefined) {
-							translationData = TranslationData.parseJson(translationDataJson.toString("utf-8"));
-						}
+					const source = await this.#createSource(filename);
+					const sourceId = Source.filenameToSourceId(this.config.context, filename);
+					if (source === undefined) {
+						diagnostics.push({
+							type: "unsupportedSource",
+							sourceId,
+						});
 					} else {
-						const source = await this.#createSource(filename);
-						const sourceId = Source.filenameToSourceId(this.config.context, filename);
-						if (source === undefined) {
-							diagnostics.push({
-								type: "unsupportedSource",
-								sourceId,
-							});
-						} else {
-							updatedSources.set(sourceId, source);
-						}
+						updatedSources.set(sourceId, source);
 					}
 				}
 
 				for (const filename of changes.removed) {
-					if (filename !== this.config.translationData.filename) {
-						removedSources.add(Source.filenameToSourceId(this.config.context, filename));
-					}
+					removedSources.add(Source.filenameToSourceId(this.config.context, filename));
 				}
 
 				const result = this.dataProcessor.applyUpdate({
 					updatedSources,
 					removedSources,
-					translationData,
 					modify: options.modify,
 					discardObsolete: this.config.obsolete.discard,
 				});
 
 				if (options.modify) {
-					if (this.dataProcessor.translationDataModified) {
-						this.dataProcessor.translationDataModified = false;
-						await this.fileSystem.writeFile(this.config.translationData.filename, Buffer.from(TranslationData.formatJson(this.dataProcessor.translationData, this.config.translationData.sorted), "utf-8"));
-					}
+					await this.dataProcessor.dataAdapter.persist();
 					for (const [sourceId, content] of result.modifiedSources) {
-						await this.fileSystem.writeFile(Source.sourceIdToFilename(this.config.context, sourceId), Buffer.from(content, "utf-8"));
+						await writeFile(Source.sourceIdToFilename(this.config.context, sourceId), Buffer.from(content, "utf-8"));
 					}
 				}
 
@@ -102,19 +86,20 @@ export class Project {
 
 				await options.onFinish?.({
 					diagnostics,
-					translationDataChanged: translationData !== undefined,
 				});
 			},
 		});
 	}
 
 	async run(options: Project.RunOptions): Promise<Project.RunResult> {
+		console.log("Running project.");
+
 		let diagnostics: Diagnostic[] = [];
-		const translationDataJson = await this.fileSystem.readOptionalFile(this.config.translationData.filename);
-		const translationData = translationDataJson === undefined ? undefined : TranslationData.parseJson(translationDataJson.toString("utf-8"));
+
+		await this.dataProcessor.dataAdapter.reload();
 
 		const sources = new Map<string, Source>();
-		for (const filename of await this.fileSystem.findFiles({
+		for (const filename of await findFiles({
 			cwd: this.config.context,
 			patterns: this.config.include,
 		})) {
@@ -131,21 +116,17 @@ export class Project {
 		}
 
 		const result = this.dataProcessor.applyUpdate({
-			translationData,
 			updatedSources: sources,
 			modify: true,
 			discardObsolete: this.config.obsolete.discard,
 		});
 
 		if (options.modify) {
-			if (this.dataProcessor.translationDataModified) {
-				this.dataProcessor.translationDataModified = false;
-				await this.fileSystem.writeFile(this.config.translationData.filename, Buffer.from(TranslationData.formatJson(this.dataProcessor.translationData, this.config.translationData.sorted), "utf-8"));
-			}
+			await this.dataProcessor.dataAdapter.persist();
 			for (const [sourceId, content] of result.modifiedSources) {
-				await this.fileSystem.writeFile(Source.sourceIdToFilename(this.config.context, sourceId), Buffer.from(content, "utf-8"));
+				await writeFile(Source.sourceIdToFilename(this.config.context, sourceId), Buffer.from(content, "utf-8"));
 			}
-		} else if (this.dataProcessor.translationDataModified || result.modifiedSources.size > 0) {
+		} else if (this.dataProcessor.dataAdapter.modified || result.modifiedSources.size > 0) {
 			diagnostics.push({
 				type: "projectOutOfSync",
 			});
@@ -177,7 +158,7 @@ export class Project {
 
 			for (const [locale, localeData] of data) {
 				const filename = Config.getOutputFilename(this.config.output.filename, locale);
-				await this.fileSystem.writeFile(filename, Buffer.from(JSON.stringify(localeData), "utf-8"));
+				await writeFile(filename, Buffer.from(JSON.stringify(localeData), "utf-8"));
 				localeDataFilenames.set(locale, filename);
 			}
 		}
@@ -189,12 +170,12 @@ export class Project {
 				manifestFilename,
 				localeDataFilenames,
 			});
-			await this.fileSystem.writeFile(manifestFilename, Buffer.from(Manifest.stringify(manifest), "utf-8"));
+			await writeFile(manifestFilename, Buffer.from(Manifest.stringify(manifest), "utf-8"));
 		}
 	}
 
 	async #createSource(filename: string): Promise<Source | undefined> {
-		const content = await this.fileSystem.readFile(filename);
+		const content = await readFile(filename);
 		for (const plugin of this.#plugins) {
 			const source = plugin.createSource?.(filename, content, this.#pluginContext);
 			if (source) {
@@ -216,7 +197,9 @@ export class Project {
 			plugins.push(plugin);
 		}
 
-		const dataProcessor = new DataProcessor(pluginSetupContext);
+		const dataProcessor = new DataProcessor({
+			dataAdapter: options.dataAdapter,
+		});
 
 		return new Project(options, dataProcessor, plugins);
 	}
@@ -225,7 +208,7 @@ export class Project {
 export declare namespace Project {
 	export interface Options {
 		config: Config;
-		fileSystem: FileSystem;
+		dataAdapter: DataAdapter;
 	}
 
 	export interface WatchOptions {
@@ -248,6 +231,5 @@ export declare namespace Project {
 	}
 
 	export interface WatchRunResult extends RunResult {
-		translationDataChanged: boolean;
 	}
 }

@@ -1,5 +1,5 @@
 import { readFile } from "node:fs/promises";
-import { dirname, normalize, resolve } from "node:path";
+import { dirname, isAbsolute, normalize, resolve } from "node:path";
 
 import resolveModule from "resolve";
 
@@ -9,7 +9,7 @@ import { DiscardObsoleteFragmentType, discardObsoleteFragmentTypes } from "./obs
 
 export interface Config {
 	readonly context: string;
-	readonly translationData: Config.TranslationData;
+	readonly data: Config.DataAdapter;
 	readonly namespace: string;
 	readonly include: string[];
 	readonly sourceLocale: string;
@@ -22,7 +22,7 @@ export interface Config {
 
 export namespace Config {
 	export interface Json {
-		translationData?: TranslationDataJson;
+		data?: DataAdapter;
 		namespace?: string;
 		include?: string[];
 		locales?: string[];
@@ -30,6 +30,10 @@ export namespace Config {
 		obsolete?: ObsoleteJson;
 		output?: OutputJson;
 		diagnostics?: DiagnosticSeverityConfig;
+	}
+
+	export interface DataAdapter extends Record<string, unknown> {
+		adapter?: string;
 	}
 
 	export interface PluginJson {
@@ -52,7 +56,6 @@ export namespace Config {
 
 	export interface TranslationData {
 		filename: string;
-		sorted: boolean;
 	}
 
 	export interface TranslationDataJson {
@@ -73,8 +76,7 @@ export namespace Config {
 	}
 
 	export interface Defaults {
-		translationDataFilename: string;
-		translationDataSorted: boolean;
+		data: DataAdapter;
 		namespace: string;
 		include: string[];
 		locales: string[];
@@ -86,12 +88,13 @@ export namespace Config {
 	}
 
 	export const DEFAULTS: Defaults = {
-		translationDataFilename: "./u27n-data.json",
-		translationDataSorted: true,
+		data: {
+			filename: "./u27n-data.json",
+		},
 		namespace: "",
 		include: ["./src/**/*"],
 		locales: ["en"],
-		obsoleteDiscard: DiscardObsoleteFragmentType.All,
+		obsoleteDiscard: "all",
 		outputFilename: "./dist/locale/[locale].json",
 		outputIncludeOutdated: false,
 		outputManifestPath: "./dist",
@@ -111,15 +114,37 @@ export namespace Config {
 	}
 
 	export async function fromJson(json: Json, context: string, defaults?: Partial<Defaults>): Promise<Config> {
+		if (!isAbsolute(context)) {
+			throw new TypeError("context must be an absolute path.");
+		}
+
 		const allDefaults = {
 			...DEFAULTS,
 			...defaults,
 		};
 
-		const translationDataFilename = resolve(context, json.translationData?.filename ?? allDefaults.translationDataFilename);
-		const translationDataSorted = json.translationData?.sorted ?? allDefaults.translationDataSorted;
-		if (typeof translationDataSorted !== "boolean") {
-			throw new TypeError("translationData.sorted must be a boolean.");
+		const data = json.data ?? allDefaults.data;
+		if (data === null || typeof data !== "object" || Array.isArray(data)) {
+			throw new TypeError("data must be an object.");
+		}
+		if (data.adapter !== undefined && typeof data.adapter !== "string") {
+			throw new TypeError("data.adapter must be a string or undefined.");
+		}
+
+		if (data.adapter !== undefined) {
+			// eslint-disable-next-line require-atomic-updates
+			data.adapter = await new Promise<string>((resolve, reject) => {
+				resolveModule(data.adapter!, {
+					basedir: context,
+					includeCoreModules: false,
+				}, (error, entry) => {
+					if (error) {
+						reject(error);
+					} else {
+						resolve(normalize(entry!));
+					}
+				});
+			});
 		}
 
 		const namespace = json.namespace ?? allDefaults.namespace;
@@ -213,10 +238,7 @@ export namespace Config {
 
 		return {
 			context,
-			translationData: {
-				filename: translationDataFilename,
-				sorted: translationDataSorted,
-			},
+			data,
 			namespace,
 			include,
 			sourceLocale: locales[0],

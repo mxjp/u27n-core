@@ -2,7 +2,7 @@ import type { Config } from "./config.js";
 import { DataProcessor } from "./data-processor.js";
 import type { Source } from "./source.js";
 
-export interface PluginSetupContext extends DataProcessor.Options {
+export interface PluginSetupContext {
 	/** The global configuration. */
 	readonly config: Config;
 }

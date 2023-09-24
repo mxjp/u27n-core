@@ -1,10 +1,10 @@
+import { DataAdapter } from "../../src/data-adapter.js";
 import { Source } from "../../src/source.js";
-import { TranslationData } from "../../src/translation-data.js";
 import { unindent } from "./unindent.js";
 
 const FRAGMENT_REGEXP = /(\s*)((?:[^=\n])+)(?: id=([^\n]+))?(\n|$)/y;
 
-function parseValue(value: string): TranslationData.Value {
+function parseValue(value: string): DataAdapter.Value {
 	const plural = /^plural:\s([^]+)$/.exec(value);
 	if (plural) {
 		return {
@@ -15,7 +15,7 @@ function parseValue(value: string): TranslationData.Value {
 	return value;
 }
 
-function formatValue(value: TranslationData.Value): string {
+function formatValue(value: DataAdapter.Value): string {
 	if (value === null) {
 		throw new TypeError("invalid value to format");
 	}

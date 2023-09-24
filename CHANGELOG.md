@@ -1,9 +1,12 @@
 # Changelog
 
 ## 3.0
-+ **Breaking:** Replace strings with Buffers in file system abstraction and plugin api.
++ **Breaking:** Replace translation data handling and related api with data adapters.
++ **Breaking:** Replace strings with Buffers in plugin api.
 + **Breaking:** Remove language server and related api.
 + **Breaking:** Remove `onDiagnostics` project watch option.
++ **Breaking:** Replace `DiscardObsoleteFragmentType` with union type.
++ **Breaking:** Remove file system abstraction.
 
 ## 2.2
 + Add project update causes to language server.

@@ -1,20 +1,31 @@
 import test from "ava";
 
+import { DataAdapter } from "../src/data-adapter.js";
 import { DataProcessor } from "../src/data-processor.js";
 import { LocaleData } from "../src/runtime/locale-data.js";
+import { clearModified, createInertAdapter, exportDataJson, fragment, importDataJson, verifyFragments } from "./_utility/data-adapter.js";
 import { TestSource } from "./_utility/test-source.js";
-import { TranslationDataUtility as td } from "./_utility/translation-data.js";
 import { unindent } from "./_utility/unindent.js";
 
-test(`${DataProcessor.prototype.applyUpdate.name} (empty update)`, t => {
-	const dataProcessor = new DataProcessor();
+test(`${DataProcessor.prototype.applyUpdate.name} (empty update)`, async t => {
+	const dataProcessor = new DataProcessor({
+		dataAdapter: createInertAdapter({}),
+	});
 	const result = dataProcessor.applyUpdate({});
 	t.is(result.modifiedSources.size, 0);
-	t.false(dataProcessor.translationDataModified);
+	t.false(dataProcessor.dataAdapter.modified);
 });
 
 test(`${DataProcessor.prototype.applyUpdate.name} (state in sync)`, t => {
-	const processor = new DataProcessor();
+	const processor = new DataProcessor({
+		dataAdapter: createInertAdapter({
+			fragments: {
+				0: fragment({ sourceId: "a", value: "foo" }),
+				1: fragment({ sourceId: "a", value: "bar" }),
+				2: fragment({ sourceId: "b", value: "baz" }),
+			},
+		}),
+	});
 	const result = processor.applyUpdate({
 		updatedSources: new Map([
 			["a", new TestSource(`
@@ -25,96 +36,107 @@ test(`${DataProcessor.prototype.applyUpdate.name} (state in sync)`, t => {
 				baz id=2
 			`)],
 		]),
-		translationData: td.translationData({
-			fragments: {
-				0: td.fragment({ sourceId: "a", value: "foo" }),
-				1: td.fragment({ sourceId: "a", value: "bar" }),
-				2: td.fragment({ sourceId: "b", value: "baz" }),
-			},
-		}),
 	});
-	t.false(processor.translationDataModified);
+	t.false(processor.dataAdapter.modified);
 	t.is(result.modifiedSources.size, 0);
 });
 
-for (const [name, ...updates] of ([
-	["missing id", {
-		updatedSources: new Map([
-			["a", new TestSource(`
-				foo id=42
-				bar
-			`)],
-			["b", new TestSource(`
-				baz id=0
-			`)],
-		]),
-		translationData: td.translationData({
+for (const [name, adapter, ...updates] of ([
+	[
+		"missing id",
+		createInertAdapter({
 			fragments: {
-				0: td.fragment({ sourceId: "b", value: "baz" }),
+				0: fragment({ sourceId: "b", value: "baz" }),
 			},
 		}),
-	}],
-	["duplicate id, no data", {
-		updatedSources: new Map([
-			["a", new TestSource(`
-				foo id=0
-				bar id=0
-			`)],
-		]),
-	}],
-	["removed source", {
-		updatedSources: new Map([
-			["a", new TestSource(`
-				foo id=0
-			`)],
-		]),
-	}, {
-		removedSources: new Set(["a"]),
-	}],
-	["missing source", {
-		translationData: td.translationData({
+		{
+			updatedSources: new Map([
+				["a", new TestSource(`
+					foo id=42
+					bar
+				`)],
+				["b", new TestSource(`
+					baz id=0
+				`)],
+			]),
+		},
+	],
+	[
+		"duplicate id, no data",
+		createInertAdapter({}),
+		{
+			updatedSources: new Map([
+				["a", new TestSource(`
+					foo id=0
+					bar id=0
+				`)],
+			]),
+		},
+	],
+	[
+		"removed source",
+		createInertAdapter({}),
+		{
+			updatedSources: new Map([
+				["a", new TestSource(`
+					foo id=0
+				`)],
+			]),
+		},
+		{
+			removedSources: new Set(["a"]),
+		},
+	],
+	[
+		"missing source",
+		createInertAdapter({
 			fragments: {
-				0: td.fragment({}),
+				0: fragment({}),
 			},
 		}),
-	}],
-	["data update, add source", {
-		updatedSources: new Map([
-			["a", new TestSource(`
-				foo id=0
-			`)],
-		]),
-	}, {
-		translationData: td.translationData({
+		{},
+	],
+	[
+		"data update, add source",
+		createInertAdapter({
 			fragments: {
-				1: td.fragment({
+				1: fragment({
 					value: "bar",
 				}),
 			},
 		}),
-		updatedSources: new Map([
-			["b", new TestSource(`
-				bar id=1
-			`)],
-		]),
-	}],
-] as [string, ...DataProcessor.Update[]][])) {
+		{
+			updatedSources: new Map([
+				["b", new TestSource(`
+					bar id=1
+				`)],
+			]),
+		},
+	],
+] as [string, DataAdapter, ...DataProcessor.Update[]][])) {
 	test(`${DataProcessor.prototype.applyUpdate.name} (modify disabled, ${name})`, async t => {
-		const processor = new DataProcessor();
-
+		const processor = new DataProcessor({
+			dataAdapter: adapter,
+		});
 		for (let i = 0; i < updates.length; i++) {
 			const result = processor.applyUpdate({
 				...updates[i],
 				modify: false,
 			});
-			t.false(processor.translationDataModified);
+			t.false(processor.dataAdapter.modified);
 			t.is(result.modifiedSources.size, 0);
 		}
 	});
 }
 
 test(`${DataProcessor.prototype.applyUpdate.name} (missing id)`, async t => {
-	const processor = new DataProcessor();
+	const processor = new DataProcessor({
+		dataAdapter: createInertAdapter({
+			fragments: {
+				0: fragment({ sourceId: "b", value: "baz" }),
+			},
+		}),
+	});
 	const result = processor.applyUpdate({
 		updatedSources: new Map([
 			["a", new TestSource(`
@@ -125,21 +147,13 @@ test(`${DataProcessor.prototype.applyUpdate.name} (missing id)`, async t => {
 				baz id=0
 			`)],
 		]),
-		translationData: td.translationData({
-			fragments: {
-				0: td.fragment({ sourceId: "b", value: "baz" }),
-			},
-		}),
 	});
-	t.true(processor.translationDataModified);
-	td.verifyFragments(t, processor.translationData, {
+	t.true(processor.dataAdapter.modified);
+	verifyFragments(t, exportDataJson(processor.dataAdapter), {
 		0: { sourceId: "b", value: "baz" },
 		1: { sourceId: "a", value: "bar" },
 		42: { sourceId: "a", value: "foo" },
 	});
-	processor.translationDataModified = false;
-	t.false(processor.translationDataModified);
-
 	t.deepEqual(result.modifiedSources, new Map([
 		["a", unindent(`
 			foo id=42
@@ -149,7 +163,11 @@ test(`${DataProcessor.prototype.applyUpdate.name} (missing id)`, async t => {
 });
 
 test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, multiple sources, no data)`, async t => {
-	const processor = new DataProcessor();
+	const processor = new DataProcessor({
+		dataAdapter: createInertAdapter({
+
+		}),
+	});
 	const result = processor.applyUpdate({
 		updatedSources: new Map([
 			["a", new TestSource(`
@@ -161,8 +179,8 @@ test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, multiple source
 		]),
 	});
 
-	t.true(processor.translationDataModified);
-	td.verifyFragments(t, processor.translationData, {
+	t.true(processor.dataAdapter.modified);
+	verifyFragments(t, exportDataJson(processor.dataAdapter), {
 		1: { sourceId: "a", value: "foo" },
 		2: { sourceId: "b", value: "bar" },
 	});
@@ -178,7 +196,9 @@ test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, multiple source
 });
 
 test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, single source, no data)`, async t => {
-	const processor = new DataProcessor();
+	const processor = new DataProcessor({
+		dataAdapter: createInertAdapter({}),
+	});
 	const result = processor.applyUpdate({
 		updatedSources: new Map([
 			["a", new TestSource(`
@@ -188,8 +208,8 @@ test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, single source, 
 		]),
 	});
 
-	t.true(processor.translationDataModified);
-	td.verifyFragments(t, processor.translationData, {
+	t.true(processor.dataAdapter.modified);
+	verifyFragments(t, exportDataJson(processor.dataAdapter), {
 		0: { sourceId: "a", value: "foo" },
 		1: { sourceId: "a", value: "bar" },
 	});
@@ -203,7 +223,13 @@ test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, single source, 
 });
 
 test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, multiple sources, data in sync)`, async t => {
-	const processor = new DataProcessor();
+	const processor = new DataProcessor({
+		dataAdapter: createInertAdapter({
+			fragments: {
+				0: fragment({ sourceId: "b", value: "bar" }),
+			},
+		}),
+	});
 	const result = processor.applyUpdate({
 		updatedSources: new Map([
 			["a", new TestSource(`
@@ -213,15 +239,10 @@ test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, multiple source
 				bar id=0
 			`)],
 		]),
-		translationData: td.translationData({
-			fragments: {
-				0: td.fragment({ sourceId: "b", value: "bar" }),
-			},
-		}),
 	});
 
-	t.true(processor.translationDataModified);
-	td.verifyFragments(t, processor.translationData, {
+	t.true(processor.dataAdapter.modified);
+	verifyFragments(t, exportDataJson(processor.dataAdapter), {
 		0: { sourceId: "b", value: "bar" },
 		1: { sourceId: "a", value: "foo" },
 	});
@@ -234,7 +255,13 @@ test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, multiple source
 });
 
 test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, single source, data in sync)`, async t => {
-	const processor = new DataProcessor();
+	const processor = new DataProcessor({
+		dataAdapter: createInertAdapter({
+			fragments: {
+				0: fragment({ sourceId: "b", value: "bar" }),
+			},
+		}),
+	});
 	const result = processor.applyUpdate({
 		updatedSources: new Map([
 			["a", new TestSource(`
@@ -242,15 +269,10 @@ test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, single source, 
 				bar id=0
 			`)],
 		]),
-		translationData: td.translationData({
-			fragments: {
-				0: td.fragment({ sourceId: "b", value: "bar" }),
-			},
-		}),
 	});
 
-	t.true(processor.translationDataModified);
-	td.verifyFragments(t, processor.translationData, {
+	t.true(processor.dataAdapter.modified);
+	verifyFragments(t, exportDataJson(processor.dataAdapter), {
 		0: { sourceId: "a", value: "foo" },
 		1: { sourceId: "a", value: "bar" },
 	});
@@ -264,7 +286,13 @@ test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, single source, 
 });
 
 test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, multiple sources, data out of sync)`, async t => {
-	const processor = new DataProcessor();
+	const processor = new DataProcessor({
+		dataAdapter: createInertAdapter({
+			fragments: {
+				0: fragment({ sourceId: "a", value: "baz" }),
+			},
+		}),
+	});
 	const result = processor.applyUpdate({
 		updatedSources: new Map([
 			["a", new TestSource(`
@@ -274,15 +302,10 @@ test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, multiple source
 				bar id=0
 			`)],
 		]),
-		translationData: td.translationData({
-			fragments: {
-				0: td.fragment({ sourceId: "a", value: "baz" }),
-			},
-		}),
 	});
 
-	t.true(processor.translationDataModified);
-	td.verifyFragments(t, processor.translationData, {
+	t.true(processor.dataAdapter.modified);
+	verifyFragments(t, exportDataJson(processor.dataAdapter), {
 		1: { sourceId: "a", value: "foo" },
 		2: { sourceId: "b", value: "bar" },
 	});
@@ -298,7 +321,13 @@ test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, multiple source
 });
 
 test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, single source, data out of sync)`, async t => {
-	const processor = new DataProcessor();
+	const processor = new DataProcessor({
+		dataAdapter: createInertAdapter({
+			fragments: {
+				0: fragment({ sourceId: "a", value: "baz" }),
+			},
+		}),
+	});
 	const result = processor.applyUpdate({
 		updatedSources: new Map([
 			["a", new TestSource(`
@@ -306,15 +335,10 @@ test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, single source, 
 				bar id=0
 			`)],
 		]),
-		translationData: td.translationData({
-			fragments: {
-				0: td.fragment({ sourceId: "a", value: "baz" }),
-			},
-		}),
 	});
 
-	t.true(processor.translationDataModified);
-	td.verifyFragments(t, processor.translationData, {
+	t.true(processor.dataAdapter.modified);
+	verifyFragments(t, exportDataJson(processor.dataAdapter), {
 		0: { sourceId: "a", value: "foo" },
 		1: { sourceId: "a", value: "bar" },
 	});
@@ -328,7 +352,9 @@ test(`${DataProcessor.prototype.applyUpdate.name} (duplicate id, single source, 
 });
 
 test(`${DataProcessor.prototype.applyUpdate.name} (remove source)`, t => {
-	const processor = new DataProcessor();
+	const processor = new DataProcessor({
+		dataAdapter: createInertAdapter({}),
+	});
 
 	processor.applyUpdate({
 		updatedSources: new Map([
@@ -337,37 +363,38 @@ test(`${DataProcessor.prototype.applyUpdate.name} (remove source)`, t => {
 			`)],
 		]),
 	});
-	td.verifyFragments(t, processor.translationData, {
+	verifyFragments(t, exportDataJson(processor.dataAdapter), {
 		0: { sourceId: "a", value: "foo" },
 	});
-	processor.translationDataModified = false;
-	t.false(processor.translationDataModified);
+	clearModified(processor.dataAdapter);
 
 	const result = processor.applyUpdate({
 		removedSources: new Set(["a"]),
 	});
 	t.is(result.modifiedSources.size, 0);
 
-	t.true(processor.translationDataModified);
-	td.verifyFragments(t, processor.translationData, {});
+	t.true(processor.dataAdapter.modified);
+	verifyFragments(t, exportDataJson(processor.dataAdapter), {});
 });
 
 test(`${DataProcessor.prototype.applyUpdate.name} (missing source)`, t => {
-	const processor = new DataProcessor();
-	const result = processor.applyUpdate({
-		translationData: td.translationData({
+	const processor = new DataProcessor({
+		dataAdapter: createInertAdapter({
 			fragments: {
-				0: td.fragment({}),
+				0: fragment({}),
 			},
 		}),
 	});
+	const result = processor.applyUpdate({});
 	t.is(result.modifiedSources.size, 0);
-	t.true(processor.translationDataModified);
-	td.verifyFragments(t, processor.translationData, {});
+	t.true(processor.dataAdapter.modified);
+	verifyFragments(t, exportDataJson(processor.dataAdapter), {});
 });
 
 test(`${DataProcessor.prototype.applyUpdate.name} (data update, add source)`, async t => {
-	const processor = new DataProcessor();
+	const processor = new DataProcessor({
+		dataAdapter: createInertAdapter({}),
+	});
 	{
 		const result = processor.applyUpdate({
 			updatedSources: new Map([
@@ -377,18 +404,21 @@ test(`${DataProcessor.prototype.applyUpdate.name} (data update, add source)`, as
 			]),
 		});
 		t.is(result.modifiedSources.size, 0);
-		t.true(processor.translationDataModified);
-		processor.translationDataModified = false;
+		t.true(processor.dataAdapter.modified);
+		clearModified(processor.dataAdapter);
+		verifyFragments(t, exportDataJson(processor.dataAdapter), {
+			0: { sourceId: "a", value: "foo" },
+		});
 	}
 	{
+		importDataJson(processor.dataAdapter, {
+			fragments: {
+				1: fragment({
+					value: "bar",
+				}),
+			},
+		});
 		const result = processor.applyUpdate({
-			translationData: td.translationData({
-				fragments: {
-					1: td.fragment({
-						value: "bar",
-					}),
-				},
-			}),
 			updatedSources: new Map([
 				["b", new TestSource(`
 					bar id=1
@@ -396,8 +426,8 @@ test(`${DataProcessor.prototype.applyUpdate.name} (data update, add source)`, as
 			]),
 		});
 		t.is(result.modifiedSources.size, 0);
-		t.true(processor.translationDataModified);
-		td.verifyFragments(t, processor.translationData, {
+		t.true(processor.dataAdapter.modified);
+		verifyFragments(t, exportDataJson(processor.dataAdapter), {
 			0: { sourceId: "a", value: "foo" },
 			1: { sourceId: "b", value: "bar" },
 		});
@@ -405,7 +435,9 @@ test(`${DataProcessor.prototype.applyUpdate.name} (data update, add source)`, as
 });
 
 test(`${DataProcessor.prototype.applyUpdate.name} (data update, update source)`, async t => {
-	const processor = new DataProcessor();
+	const processor = new DataProcessor({
+		dataAdapter: createInertAdapter({}),
+	});
 	{
 		const result = processor.applyUpdate({
 			updatedSources: new Map([
@@ -415,14 +447,14 @@ test(`${DataProcessor.prototype.applyUpdate.name} (data update, update source)`,
 			]),
 		});
 		t.is(result.modifiedSources.size, 0);
-		t.true(processor.translationDataModified);
-		processor.translationDataModified = false;
+		t.true(processor.dataAdapter.modified);
+		clearModified(processor.dataAdapter);
 	}
 	{
+		importDataJson(processor.dataAdapter, {
+			fragments: {},
+		});
 		const result = processor.applyUpdate({
-			translationData: td.translationData({
-				fragments: {},
-			}),
 			updatedSources: new Map([
 				["a", new TestSource(`
 					bar id=0
@@ -430,15 +462,17 @@ test(`${DataProcessor.prototype.applyUpdate.name} (data update, update source)`,
 			]),
 		});
 		t.is(result.modifiedSources.size, 0);
-		t.true(processor.translationDataModified);
-		td.verifyFragments(t, processor.translationData, {
+		t.true(processor.dataAdapter.modified);
+		verifyFragments(t, exportDataJson(processor.dataAdapter), {
 			0: { sourceId: "a", value: "bar" },
 		});
 	}
 });
 
 test(`${DataProcessor.prototype.applyUpdate.name} (data update, removed source)`, async t => {
-	const processor = new DataProcessor();
+	const processor = new DataProcessor({
+		dataAdapter: createInertAdapter({}),
+	});
 	{
 		const result = processor.applyUpdate({
 			updatedSources: new Map([
@@ -448,28 +482,30 @@ test(`${DataProcessor.prototype.applyUpdate.name} (data update, removed source)`
 			]),
 		});
 		t.is(result.modifiedSources.size, 0);
-		t.true(processor.translationDataModified);
-		processor.translationDataModified = false;
+		t.true(processor.dataAdapter.modified);
+		clearModified(processor.dataAdapter);
 	}
 	{
+		importDataJson(processor.dataAdapter, {
+			fragments: {
+				0: fragment({
+					value: "foo",
+				}),
+			},
+		});
 		const result = processor.applyUpdate({
-			translationData: td.translationData({
-				fragments: {
-					0: td.fragment({
-						value: "foo",
-					}),
-				},
-			}),
 			removedSources: new Set(["a"]),
 		});
 		t.is(result.modifiedSources.size, 0);
-		t.true(processor.translationDataModified);
-		td.verifyFragments(t, processor.translationData, {});
+		t.true(processor.dataAdapter.modified);
+		verifyFragments(t, exportDataJson(processor.dataAdapter), {});
 	}
 });
 
 test(`${DataProcessor.prototype.getFragmentDiagnostics.name} (empty)`, t => {
-	const processor = new DataProcessor();
+	const processor = new DataProcessor({
+		dataAdapter: createInertAdapter({}),
+	});
 	t.deepEqual(processor.getFragmentDiagnostics({
 		sourceLocale: "en",
 		translatedLocales: ["de", "zh"],
@@ -477,23 +513,22 @@ test(`${DataProcessor.prototype.getFragmentDiagnostics.name} (empty)`, t => {
 });
 
 test(`${DataProcessor.prototype.getFragmentDiagnostics.name} (missing translations)`, t => {
-	const processor = new DataProcessor();
 	const modified = new Date().toISOString();
-	processor.applyUpdate({
-		translationData: td.translationData({
+	const processor = new DataProcessor({
+		dataAdapter: createInertAdapter({
 			fragments: {
-				0: td.fragment({
+				0: fragment({
 					value: "foo",
 					modified: modified,
 				}),
-				1: td.fragment({
+				1: fragment({
 					value: "bar",
 					modified: modified,
 					translations: {
 						de: { value: "test", modified },
 					},
 				}),
-				2: td.fragment({
+				2: fragment({
 					value: "baz",
 					modified: modified,
 					translations: {
@@ -503,6 +538,8 @@ test(`${DataProcessor.prototype.getFragmentDiagnostics.name} (missing translatio
 				}),
 			},
 		}),
+	});
+	processor.applyUpdate({
 		updatedSources: new Map([
 			["test", new TestSource(`
 				foo id=0
@@ -531,12 +568,11 @@ test(`${DataProcessor.prototype.getFragmentDiagnostics.name} (missing translatio
 });
 
 test(`${DataProcessor.prototype.getFragmentDiagnostics.name} (unknown translations)`, t => {
-	const processor = new DataProcessor();
 	const modified = new Date().toISOString();
-	processor.applyUpdate({
-		translationData: td.translationData({
+	const processor = new DataProcessor({
+		dataAdapter: createInertAdapter({
 			fragments: {
-				0: td.fragment({
+				0: fragment({
 					value: "foo",
 					modified,
 					translations: {
@@ -544,7 +580,7 @@ test(`${DataProcessor.prototype.getFragmentDiagnostics.name} (unknown translatio
 						zh: { value: "test", modified },
 					},
 				}),
-				1: td.fragment({
+				1: fragment({
 					value: "bar",
 					modified,
 					translations: {
@@ -553,6 +589,8 @@ test(`${DataProcessor.prototype.getFragmentDiagnostics.name} (unknown translatio
 				}),
 			},
 		}),
+	});
+	processor.applyUpdate({
 		updatedSources: new Map([
 			["test", new TestSource(`
 				foo id=0
@@ -574,12 +612,11 @@ test(`${DataProcessor.prototype.getFragmentDiagnostics.name} (unknown translatio
 });
 
 test(`${DataProcessor.prototype.getFragmentDiagnostics.name} (outdated translations)`, t => {
-	const processor = new DataProcessor();
 	const modified = new Date().toISOString();
-	processor.applyUpdate({
-		translationData: td.translationData({
+	const processor = new DataProcessor({
+		dataAdapter: createInertAdapter({
 			fragments: {
-				0: td.fragment({
+				0: fragment({
 					value: "foo",
 					modified,
 					translations: {
@@ -587,7 +624,7 @@ test(`${DataProcessor.prototype.getFragmentDiagnostics.name} (outdated translati
 						zh: { value: "test", modified: new Date(Date.parse(modified) - 1000).toISOString() },
 					},
 				}),
-				1: td.fragment({
+				1: fragment({
 					value: "bar",
 					modified,
 					translations: {
@@ -597,6 +634,8 @@ test(`${DataProcessor.prototype.getFragmentDiagnostics.name} (outdated translati
 				}),
 			},
 		}),
+	});
+	processor.applyUpdate({
 		updatedSources: new Map([
 			["test", new TestSource(`
 				foo id=0
@@ -617,13 +656,12 @@ test(`${DataProcessor.prototype.getFragmentDiagnostics.name} (outdated translati
 	]);
 });
 
-test(`${DataProcessor.prototype.getFragmentDiagnostics.name} (duplicate fragment)`, t => {
-	const processor = new DataProcessor();
+test(`${DataProcessor.prototype.getFragmentDiagnostics.name} (unmanaged duplicate fragment)`, t => {
 	const modified = new Date().toISOString();
-	processor.applyUpdate({
-		translationData: td.translationData({
+	const processor = new DataProcessor({
+		dataAdapter: createInertAdapter({
 			fragments: {
-				1: td.fragment({
+				1: fragment({
 					value: "baz",
 					sourceId: "b",
 					modified,
@@ -633,6 +671,8 @@ test(`${DataProcessor.prototype.getFragmentDiagnostics.name} (duplicate fragment
 				}),
 			},
 		}),
+	});
+	processor.applyUpdate({
 		updatedSources: new Map([
 			["a", new TestSource(`
 				foo id=0
@@ -643,7 +683,7 @@ test(`${DataProcessor.prototype.getFragmentDiagnostics.name} (duplicate fragment
 			`, false)],
 		]),
 	});
-	t.false(processor.translationDataModified);
+	t.false(processor.dataAdapter.modified);
 	t.deepEqual(processor.getFragmentDiagnostics({
 		sourceLocale: "en",
 		translatedLocales: ["en"],
@@ -657,12 +697,11 @@ test(`${DataProcessor.prototype.getFragmentDiagnostics.name} (duplicate fragment
 });
 
 test(`${DataProcessor.prototype.getFragmentDiagnostics.name} (value type mismatch)`, t => {
-	const processor = new DataProcessor();
 	const modified = new Date().toISOString();
-	processor.applyUpdate({
-		translationData: td.translationData({
+	const processor = new DataProcessor({
+		dataAdapter: createInertAdapter({
 			fragments: {
-				0: td.fragment({
+				0: fragment({
 					value: "foo",
 					modified,
 					translations: {
@@ -674,6 +713,8 @@ test(`${DataProcessor.prototype.getFragmentDiagnostics.name} (value type mismatc
 				}),
 			},
 		}),
+	});
+	processor.applyUpdate({
 		updatedSources: new Map([
 			["test", new TestSource(`
 				foo id=0
@@ -694,12 +735,11 @@ test(`${DataProcessor.prototype.getFragmentDiagnostics.name} (value type mismatc
 });
 
 test(`${DataProcessor.prototype.getFragmentDiagnostics.name} (plural form count mismatch)`, t => {
-	const processor = new DataProcessor();
 	const modified = new Date().toISOString();
-	processor.applyUpdate({
-		translationData: td.translationData({
+	const processor = new DataProcessor({
+		dataAdapter: createInertAdapter({
 			fragments: {
-				0: td.fragment({
+				0: fragment({
 					value: {
 						type: "plural",
 						value: ["foo", "bar", "baz"],
@@ -714,6 +754,8 @@ test(`${DataProcessor.prototype.getFragmentDiagnostics.name} (plural form count 
 				}),
 			},
 		}),
+	});
+	processor.applyUpdate({
 		updatedSources: new Map([
 			["test", new TestSource(`
 				plural: foo bar baz id=0
@@ -744,12 +786,11 @@ test(`${DataProcessor.prototype.getFragmentDiagnostics.name} (plural form count 
 });
 
 test(`${DataProcessor.prototype.getFragmentDiagnostics.name} (unsupported locales)`, t => {
-	const processor = new DataProcessor();
 	const modified = new Date().toISOString();
-	processor.applyUpdate({
-		translationData: td.translationData({
+	const processor = new DataProcessor({
+		dataAdapter: createInertAdapter({
 			fragments: {
-				0: td.fragment({
+				0: fragment({
 					value: "foo",
 					modified,
 					translations: {
@@ -759,6 +800,8 @@ test(`${DataProcessor.prototype.getFragmentDiagnostics.name} (unsupported locale
 				}),
 			},
 		}),
+	});
+	processor.applyUpdate({
 		updatedSources: new Map([
 			["test", new TestSource(`
 				foo id=0
@@ -788,13 +831,11 @@ test(`${DataProcessor.prototype.getFragmentDiagnostics.name} (unsupported locale
 });
 
 test(`${DataProcessor.prototype.generateLocaleData.name}, ${DataProcessor.prototype.generateManifest.name}`, t => {
-	const processor = new DataProcessor();
 	const modified = new Date().toISOString();
-
-	processor.applyUpdate({
-		translationData: td.translationData({
+	const processor = new DataProcessor({
+		dataAdapter: createInertAdapter({
 			fragments: {
-				0: td.fragment({
+				0: fragment({
 					value: "foo",
 					sourceId: "a",
 					modified,
@@ -802,7 +843,7 @@ test(`${DataProcessor.prototype.generateLocaleData.name}, ${DataProcessor.protot
 						en: { value: "test", modified },
 					},
 				}),
-				1: td.fragment({
+				1: fragment({
 					value: "bar",
 					sourceId: "a",
 					modified,
@@ -810,7 +851,7 @@ test(`${DataProcessor.prototype.generateLocaleData.name}, ${DataProcessor.protot
 						en: { value: "test", modified: new Date(Date.parse(modified) - 1000).toISOString() },
 					},
 				}),
-				2: td.fragment({
+				2: fragment({
 					value: "boo",
 					sourceId: "a",
 					modified,
@@ -818,7 +859,7 @@ test(`${DataProcessor.prototype.generateLocaleData.name}, ${DataProcessor.protot
 						en: { value: "test", modified },
 					},
 				}),
-				3: td.fragment({
+				3: fragment({
 					value: "test",
 					sourceId: "a",
 					modified,
@@ -826,14 +867,14 @@ test(`${DataProcessor.prototype.generateLocaleData.name}, ${DataProcessor.protot
 						en: { value: { type: "plural", value: ["a", "b"] }, modified },
 					},
 				}),
-				4: td.fragment({
+				4: fragment({
 					sourceId: "a",
 					modified,
 					translations: {
 						en: { value: "test", modified },
 					},
 				}),
-				5: td.fragment({
+				5: fragment({
 					sourceId: "a",
 					modified,
 					enabled: false,
@@ -843,6 +884,9 @@ test(`${DataProcessor.prototype.generateLocaleData.name}, ${DataProcessor.protot
 				}),
 			},
 		}),
+	});
+
+	processor.applyUpdate({
 		updatedSources: new Map([
 			["a", new TestSource(`
 				foo id=0

@@ -15,6 +15,10 @@ U27N is a _universal internationalization_ framework that aims to provide an end
     + [Pluralization](#pluralization)
   + [Concurrent Locales](#concurrent-locales)
 + [Toolchain API](#toolchain-api)
+  + [Configuration](#configuration-1)
+  + [Data Adapters](#data-adapters)
+    + [Custom Data Adapters](#custom-data-adapters)
+  + [Projects](#projects)
 + [Changelog](./CHANGELOG.md)
 
 ## Packages
@@ -29,8 +33,16 @@ U27N is a _universal internationalization_ framework that aims to provide an end
 The configuration is stored in a file usually called **u27n.json**:
 ```js
 {
-  // Optional. The filename where translation data is stored.
-  "translationData": "./u27n-data.json",
+  // Optional. Configure how translation data is stored.
+  "data": {
+    // Optional. If specified, the adapter exported by this module
+    // is used instead of the default one. Additional options depend
+    // on the type of adapter used.
+    "adapter": "./custom-adapter.js",
+
+    // Optional. The filename where to store translation data:
+    "filename": "./u27n-data.json"
+  },
 
   // Optional. The namespace for this project. This should be
   // a unique string such as an npm package name.
@@ -257,7 +269,7 @@ server.onRequest(user => {
 # Toolchain API
 The toolchain API is exported by the `@u27n/core` package and can be used to implement alternatives to the command line interface such as the [@u27n/webpack](https://www.npmjs.com/package/@u27n/webpack) package.
 
-## Creating a config
+## Configuration
 ```ts
 import { Config } from "@u27n/core";
 
@@ -265,7 +277,7 @@ import { Config } from "@u27n/core";
 const config = await Config.read("./u27n.json");
 
 // Create a validated config object programmatically:
-const config = Config.fromJson({
+const config = await Config.fromJson({
   include: [
     "./src/**/*"
   ],
@@ -276,15 +288,36 @@ const config = Config.fromJson({
 }, process.cwd());
 ```
 
+## Data Adapters
+Data adapters provide an abstraction over how translation data for a project is stored. Unless configured otherwise, the included default adapter is used which stores all translation data in a single file called `u27n-data.json`.
+```ts
+// Create a data adapter as configured:
+const dataAdapter = await DataAdapter.create({
+  config,
+});
+```
+
+### Custom Data Adapters
+Custom data adapters can be instanced directly or via the config by specifying a module that implements a `createDataAdapter` function. The [default data adapter](./src/data-adapter-default.ts) provides a good example how to implement a custom adapter.
+```ts
+// u27n.json:
+{
+  data: {
+    adapter: "./custom-adapter.js",
+    message: "Hello World!",
+  },
+}
+```
+
 ## Projects
 Projects provide a high level API for compiling locales, updating translation data and watching for changes.
 ```ts
-import { Project, NodeFileSystem } from "@u27n/core";
+import { Project } from "@u27n/core";
 
 // Create a project instance:
 const project = await Project.create({
   config,
-  fileSystem: new NodeFileSystem()
+  dataAdapter,
 });
 
 // Run once:

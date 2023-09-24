@@ -1,5 +1,4 @@
-import { Position } from "@mpt/line-map";
-
+import { DataAdapter } from "./data-adapter.js";
 import { Diagnostic } from "./diagnostics.js";
 import { Base62FragmentIdGenerator, FragmentIdGenerator } from "./fragment-id-generator.js";
 import { Manifest } from "./manifest.js";
@@ -7,23 +6,21 @@ import { DiscardObsoleteFragmentType } from "./obsolete-handling.js";
 import { getPluralInfo } from "./plural-info.js";
 import { LocaleData } from "./runtime/locale-data.js";
 import type { Source } from "./source.js";
-import { TranslationData } from "./translation-data.js";
 import { SourceFragmentMap } from "./utility/source-fragment-map.js";
-import { TranslationDataView } from "./utility/translation-data-view.js";
 
 export class DataProcessor {
+	#dataRevision: number;
+
+	/**
+	 * The current data adapter.
+	 */
+	readonly #dataAdapter: DataAdapter;
+
 	/**
 	 * The default fragment id generator that is used if
 	 * the source does not provide it's own generator.
 	 */
 	readonly #fragmentIdGenerator: FragmentIdGenerator;
-
-	/**
-	 * The current translation data view that is used.
-	 *
-	 * This is only modified while updates are processed.
-	 */
-	#translationDataView = new TranslationDataView();
 
 	/**
 	 * Map of current source ids to source instances.
@@ -35,26 +32,14 @@ export class DataProcessor {
 	 */
 	readonly #sourceFragments = new SourceFragmentMap();
 
-	constructor(options: DataProcessor.Options = {}) {
+	constructor(options: DataProcessor.Options) {
+		this.#dataRevision = options.dataAdapter.revision;
+		this.#dataAdapter = options.dataAdapter;
 		this.#fragmentIdGenerator = options.fragmentIdGenerator ?? new Base62FragmentIdGenerator();
 	}
 
-	/**
-	 * Get the current translation data that is managed by this project.
-	 */
-	get translationData(): TranslationData {
-		return this.#translationDataView.data;
-	}
-
-	/**
-	 * Get or set if the translation data that is managed by this project has been modified by applying an update.
-	 */
-	get translationDataModified(): boolean {
-		return this.#translationDataView.modified;
-	}
-
-	set translationDataModified(value: boolean) {
-		this.#translationDataView.modified = value;
+	get dataAdapter(): DataAdapter {
+		return this.#dataAdapter;
 	}
 
 	/**
@@ -71,9 +56,9 @@ export class DataProcessor {
 		const modify = update.modify ?? true;
 		const modifiedSources = new Map<string, string>();
 
-		const discardObsolete = update.discardObsolete ?? DiscardObsoleteFragmentType.All;
+		const discardObsoleteType = update.discardObsolete ?? "all";
 
-		function updateSource(this: DataProcessor, source: Source, sourceId: string) {
+		function updateSource(this: DataProcessor, source: Source, sourceId: string): void {
 			if (source.update) {
 				const updateResult = source.update({
 					updateId: fragment => {
@@ -82,7 +67,7 @@ export class DataProcessor {
 							&& !assignedFragmentIds.has(fragment.fragmentId)
 							&& (
 								!this.#sourceFragments.hasOtherSources(sourceId, fragment.fragmentId)
-								|| this.#translationDataView.getSyncFragment(sourceId, fragment) !== null
+								|| this.#dataAdapter.getSyncFragment(sourceId, fragment) !== undefined
 							)
 						) {
 							assignedFragmentIds.add(fragment.fragmentId);
@@ -105,26 +90,22 @@ export class DataProcessor {
 				}
 
 				updateResult.fragments.forEach((update, fragmentId) => {
-					this.#translationDataView.updateFragment(sourceId, fragmentId, update);
+					this.#dataAdapter.updateFragment(sourceId, fragmentId, update);
 				});
-				this.#translationDataView.removeFragmentsOfSource(sourceId, discardObsolete, fragmentId => {
-					return !updateResult.fragments.has(fragmentId);
-				});
+				this.#dataAdapter.discardFragments(sourceId, discardObsoleteType, new IdSet(updateResult.fragments));
 			} else {
 				const staticFragments = source.fragmentMap;
 				staticFragments.forEach((fragment, fragmentId) => {
 					if (fragment.value !== null && !assignedFragmentIds.has(fragmentId) && !this.#sourceFragments.hasOtherSources(sourceId, fragmentId)) {
 						assignedFragmentIds.add(fragmentId);
-						this.#translationDataView.updateFragment(sourceId, fragmentId, {
+						this.#dataAdapter.updateFragment(sourceId, fragmentId, {
 							enabled: fragment.enabled,
 							value: fragment.value,
 							oldFragmentId: undefined,
 						});
 					}
 				});
-				this.#translationDataView.removeFragmentsOfSource(sourceId, discardObsolete, fragmentId => {
-					return !staticFragments.has(fragmentId);
-				});
+				this.#dataAdapter.discardFragments(sourceId, discardObsoleteType, new IdSet(staticFragments));
 			}
 		}
 
@@ -136,9 +117,6 @@ export class DataProcessor {
 		});
 
 		const assignedFragmentIds = new Set<string>();
-		if (update.translationData) {
-			this.#translationDataView = new TranslationDataView(update.translationData);
-		}
 
 		update.updatedSources?.forEach((source, sourceId) => {
 			this.#sources.set(sourceId, source);
@@ -147,7 +125,8 @@ export class DataProcessor {
 			}
 		});
 
-		if (update.translationData) {
+		if (this.#dataRevision !== this.#dataAdapter.revision) {
+			this.#dataRevision = this.#dataAdapter.revision;
 			this.#sources.forEach((source, sourceId) => {
 				if (update.removedSources?.has(sourceId)) {
 					this.#sources.delete(sourceId);
@@ -162,9 +141,7 @@ export class DataProcessor {
 		}
 
 		if (modify) {
-			this.#translationDataView.removeSources(sourceId => {
-				return !this.#sources.has(sourceId);
-			}, discardObsolete);
+			this.#dataAdapter.discardSources(discardObsoleteType, new IdSet(this.#sources));
 		}
 
 		return { modifiedSources };
@@ -177,17 +154,15 @@ export class DataProcessor {
 
 		const sourcePluralInfo = getPluralInfo(options.sourceLocale);
 
-		this.#translationDataView.forEachSyncFragment(sourceId => {
+		this.#dataAdapter.forEachSyncFragment(sourceId => {
 			return this.#sources.get(sourceId);
 		}, (fragmentId, fragment) => {
-			const fragmentModified = TranslationDataView.parseTimestamp(fragment.modified);
-
 			const missingLocales = new Set(options.translatedLocales);
 			const unknownLocales: string[] = [];
 			const outdatedLocales: string[] = [];
 			const typeMismatchLocales: string[] = [];
 
-			if (sourcePluralInfo !== undefined && TranslationDataView.isPluralValue(fragment.value)) {
+			if (sourcePluralInfo !== undefined && DataAdapter.isPluralValue(fragment.value)) {
 				const actualFormCount = fragment.value.value.length;
 				if (actualFormCount !== sourcePluralInfo.formCount) {
 					diagnostics.push({
@@ -208,14 +183,15 @@ export class DataProcessor {
 				if (!missingLocales.delete(locale)) {
 					unknownLocales.push(locale);
 				}
-				if (TranslationDataView.isOutdated(fragmentModified, translation)) {
+
+				if (fragment.modified > translation.modified) {
 					outdatedLocales.push(locale);
 				}
-				if (!TranslationDataView.valueTypeEquals(fragment.value, translation.value)) {
+				if (!DataAdapter.valueTypeEquals(fragment.value, translation.value)) {
 					typeMismatchLocales.push(locale);
 				}
 
-				if (TranslationDataView.isPluralValue(translation.value)) {
+				if (DataAdapter.isPluralValue(translation.value)) {
 					const pluralInfo = getPluralInfo(locale);
 					const actualFormCount = translation.value.value.length;
 					if (pluralInfo !== undefined && actualFormCount !== pluralInfo.formCount) {
@@ -307,17 +283,16 @@ export class DataProcessor {
 		this.#sources.forEach((source, sourceId) => {
 			source.fragments.forEach(fragment => {
 				if (fragment.enabled) {
-					const fragmentData = this.#translationDataView.getSyncFragment(sourceId, fragment);
+					const fragmentData = this.#dataAdapter.getSyncFragment(sourceId, fragment);
 					// eslint-disable-next-line @typescript-eslint/prefer-optional-chain
-					if (fragmentData !== null && fragmentData.value !== null) {
-						const fragmentModified = TranslationDataView.parseTimestamp(fragmentData.modified);
+					if (fragmentData !== undefined && fragmentData.value !== null) {
 						for (let i = 0; i < translatedLocales.length; i++) {
 							const locale = translatedLocales[i];
 							const translation = fragmentData.translations[locale];
 							if (translation !== undefined
-								&& TranslationDataView.valueTypeEquals(fragmentData.value, translation.value)
-								&& (options.includeOutdated || !TranslationDataView.isOutdated(fragmentModified, translation))) {
-								addValue(locale, options.namespace, fragment.fragmentId!, TranslationData.toRawValue(translation.value));
+								&& DataAdapter.valueTypeEquals(fragmentData.value, translation.value)
+								&& (options.includeOutdated || fragmentData.modified <= translation.modified)) {
+								addValue(locale, options.namespace, fragment.fragmentId!, DataAdapter.toRawValue(translation.value));
 							}
 						}
 					}
@@ -382,6 +357,11 @@ export class DataProcessor {
 export declare namespace DataProcessor {
 	export interface Options {
 		/**
+		 * The data adapter to use.
+		 */
+		dataAdapter: DataAdapter;
+
+		/**
 		 * The fragment id generator to use.
 		 *
 		 * By default, a new `Base62FragmentIdGenerator` instance is used.
@@ -394,8 +374,6 @@ export declare namespace DataProcessor {
 		updatedSources?: Map<string, Source>;
 		/** Set of source ids that have been removed from disk */
 		removedSources?: Set<string>;
-		/** The initial or updated translation data from disk */
-		translationData?: TranslationData;
 		/** True to allow modifying sources */
 		modify?: boolean;
 		/** How to handle discarding obsolete fragments */
@@ -419,19 +397,6 @@ export declare namespace DataProcessor {
 		includeOutdated: boolean;
 	}
 
-	export interface EditableFragment extends TranslationData.Fragment {
-		fragmentId: string;
-		start: number;
-		startPos: Position | null;
-		end: number;
-		endPos: Position | null;
-		editedLocales: string[];
-	}
-
-	export interface PendingChanges {
-		translations: Record<string, Record<string, TranslationData.Translation>>;
-	}
-
 	export interface GenerateManifestOptions {
 		/** The project namespace. */
 		namespace: string;
@@ -439,5 +404,21 @@ export declare namespace DataProcessor {
 		manifestFilename: string;
 		/** Map of locale codes to absolute output locale data filenames. */
 		localeDataFilenames: Map<string, string>;
+	}
+}
+
+class IdSet implements DataAdapter.IdSet {
+	#target: ReadonlyMap<string, unknown>;
+
+	constructor(target: ReadonlyMap<string, unknown>) {
+		this.#target = target;
+	}
+
+	has(fragmentId: string): boolean {
+		return this.#target.has(fragmentId);
+	}
+
+	ids() {
+		return this.#target.keys();
 	}
 }
