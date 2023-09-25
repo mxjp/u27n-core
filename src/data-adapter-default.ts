@@ -69,14 +69,18 @@ export class DefaultDataAdapter implements DataAdapter {
 		});
 
 		if (file) {
-			const stats = await file.stat();
-			if (stats.mtimeMs !== this.#lastMtimeMs) {
-				const data = JSON.parse(await file.readFile("utf-8")) as DataJson;
-				if (data.version !== 1) {
-					throw new Error(`unsupported version: ${data.version}`);
+			try {
+				const stats = await file.stat();
+				if (stats.mtimeMs !== this.#lastMtimeMs) {
+					const data = JSON.parse(await file.readFile("utf-8")) as DataJson;
+					if (data.version !== 1) {
+						throw new Error(`unsupported version: ${data.version}`);
+					}
+					this.importJson(data);
+					return true;
 				}
-				this.importJson(data);
-				return true;
+			} finally {
+				await file.close();
 			}
 		}
 
