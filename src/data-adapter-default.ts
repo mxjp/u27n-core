@@ -57,7 +57,7 @@ export class DefaultDataAdapter implements DataAdapter {
 		this.#revision++;
 	}
 
-	async reload(): Promise<void> {
+	async reload(): Promise<boolean> {
 		if (this.#filename === undefined) {
 			throw new Error("data adapter is inert");
 		}
@@ -76,7 +76,7 @@ export class DefaultDataAdapter implements DataAdapter {
 					throw new Error(`unsupported version: ${data.version}`);
 				}
 				this.importJson(data);
-				return;
+				return true;
 			}
 		}
 
@@ -85,6 +85,7 @@ export class DefaultDataAdapter implements DataAdapter {
 			fragments: {},
 			obsolete: [],
 		});
+		return false;
 	}
 
 	get modified(): boolean {

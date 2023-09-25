@@ -34,7 +34,7 @@ export class Project {
 			delay: options.delay,
 			onError: options.onError,
 			onChange: async changes => {
-				await this.dataProcessor.dataAdapter.reload();
+				const dataReloaded = await this.dataProcessor.dataAdapter.reload();
 
 				let diagnostics: Diagnostic[] = [];
 				const updatedSources = new Map<string, Source>();
@@ -84,6 +84,7 @@ export class Project {
 
 				await options.onFinish?.({
 					diagnostics,
+					dataReloaded,
 				});
 			},
 		});
@@ -92,7 +93,7 @@ export class Project {
 	async run(options: Project.RunOptions): Promise<Project.RunResult> {
 		let diagnostics: Diagnostic[] = [];
 
-		await this.dataProcessor.dataAdapter.reload();
+		const dataReloaded = await this.dataProcessor.dataAdapter.reload();
 
 		const sources = new Map<string, Source>();
 		for (const filename of await findFiles({
@@ -140,7 +141,10 @@ export class Project {
 			await this.#generateOutput();
 		}
 
-		return { diagnostics };
+		return {
+			diagnostics,
+			dataReloaded,
+		};
 	}
 
 	async #generateOutput(): Promise<void> {
@@ -264,6 +268,7 @@ export declare namespace Project {
 
 	export interface RunResult {
 		diagnostics: Diagnostic[];
+		dataReloaded: boolean;
 	}
 
 	export interface WatchRunResult extends RunResult {

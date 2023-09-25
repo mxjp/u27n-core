@@ -15,8 +15,10 @@ export interface DataAdapter {
 
 	/**
 	 * Called when this adapter should reload or update data from disk.
+	 *
+	 * @returns True if data has been reloaded.
 	 */
-	reload(): Promise<void>;
+	reload(): Promise<boolean>;
 
 	/**
 	 * True if there are unpersisted changes that were made through this adapter.
@@ -111,7 +113,7 @@ export namespace DataAdapter {
 	export interface Translation {
 		/** The value. */
 		value: Value;
-		/** When this value was last modified in milliseconds since midnight, January 1, 1970 UTC. */
+		/** When this value was last modified in milliseconds since the UNIX epoch. */
 		modified: number;
 	}
 
