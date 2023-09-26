@@ -117,10 +117,11 @@ export namespace Config {
 			...defaults,
 		};
 
-		const data = json.data ?? allDefaults.data;
+		let data = json.data ?? allDefaults.data;
 		if (typeof data !== "string") {
 			throw new TypeError("data must be a string.");
 		}
+		data = resolve(context, data);
 
 		const namespace = json.namespace ?? allDefaults.namespace;
 		if (typeof namespace !== "string") {

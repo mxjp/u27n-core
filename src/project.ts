@@ -4,12 +4,13 @@ import { Config } from "./config.js";
 import { DataAdapter } from "./data-adapter.js";
 import { DefaultDataAdapter } from "./data-adapter-default.js";
 import { DataProcessor } from "./data-processor.js";
-import { findFiles, watchFiles, writeFile } from "./file-system.js";
+import { FileChanges, findFiles, watchFiles, writeFile } from "./file-system.js";
 import { Diagnostic } from "./index.js";
 import { Manifest } from "./manifest.js";
 import { Plugin } from "./plugin.js";
 import { Source } from "./source.js";
 import { filenameToSourceId, sourceIdToFilename } from "./source-id.js";
+import { taskQueue } from "./utility/task-queue.js";
 
 export class Project {
 	readonly config: Config;
@@ -28,66 +29,87 @@ export class Project {
 	}
 
 	watch(options: Project.WatchOptions): () => Promise<void> {
-		return watchFiles({
+		const applyUpdate = taskQueue(async (sourceChanges: FileChanges) => {
+			const dataReloaded = await this.dataProcessor.dataAdapter.reload();
+
+			let diagnostics: Diagnostic[] = [];
+			const updatedSources = new Map<string, Source>();
+			const removedSources = new Set<string>();
+			for (const filename of sourceChanges.updated) {
+				const source = await this.#createSource(filename);
+				const sourceId = filenameToSourceId(this.config.context, filename);
+				if (source === undefined) {
+					diagnostics.push({
+						type: "unsupportedSource",
+						sourceId,
+					});
+				} else {
+					updatedSources.set(sourceId, source);
+				}
+			}
+
+			for (const filename of sourceChanges.removed) {
+				removedSources.add(filenameToSourceId(this.config.context, filename));
+			}
+
+			const result = this.dataProcessor.applyUpdate({
+				updatedSources,
+				removedSources,
+				modify: options.modify,
+				discardObsolete: this.config.obsolete.discard,
+			});
+
+			if (options.modify) {
+				await this.dataProcessor.dataAdapter.persist();
+				for (const [sourceId, update] of result.modifiedSources) {
+					const filename = sourceIdToFilename(this.config.context, sourceId);
+					await persistUpdate(filename, update);
+				}
+			}
+
+			if (options.fragmentDiagnostics) {
+				diagnostics = diagnostics.concat(this.dataProcessor.getFragmentDiagnostics({
+					sourceLocale: this.config.sourceLocale,
+					translatedLocales: this.config.translatedLocales,
+				}));
+			}
+
+			if (options.output) {
+				await this.#generateOutput();
+			}
+
+			await options.onFinish?.({
+				diagnostics,
+				dataReloaded,
+			});
+		});
+
+		const closeSourceWatcher = watchFiles({
 			cwd: this.config.context,
 			patterns: this.config.include,
 			delay: options.delay,
 			onError: options.onError,
-			onChange: async changes => {
-				const dataReloaded = await this.dataProcessor.dataAdapter.reload();
-
-				let diagnostics: Diagnostic[] = [];
-				const updatedSources = new Map<string, Source>();
-				const removedSources = new Set<string>();
-				for (const filename of changes.updated) {
-					const source = await this.#createSource(filename);
-					const sourceId = filenameToSourceId(this.config.context, filename);
-					if (source === undefined) {
-						diagnostics.push({
-							type: "unsupportedSource",
-							sourceId,
-						});
-					} else {
-						updatedSources.set(sourceId, source);
-					}
-				}
-
-				for (const filename of changes.removed) {
-					removedSources.add(filenameToSourceId(this.config.context, filename));
-				}
-
-				const result = this.dataProcessor.applyUpdate({
-					updatedSources,
-					removedSources,
-					modify: options.modify,
-					discardObsolete: this.config.obsolete.discard,
-				});
-
-				if (options.modify) {
-					await this.dataProcessor.dataAdapter.persist();
-					for (const [sourceId, update] of result.modifiedSources) {
-						const filename = sourceIdToFilename(this.config.context, sourceId);
-						await persistUpdate(filename, update);
-					}
-				}
-
-				if (options.fragmentDiagnostics) {
-					diagnostics = diagnostics.concat(this.dataProcessor.getFragmentDiagnostics({
-						sourceLocale: this.config.sourceLocale,
-						translatedLocales: this.config.translatedLocales,
-					}));
-				}
-
-				if (options.output) {
-					await this.#generateOutput();
-				}
-
-				await options.onFinish?.({
-					diagnostics,
-					dataReloaded,
-				});
-			},
+			onChange: applyUpdate,
 		});
+
+		let closeDataWatcher: (() => Promise<void>) | undefined = undefined;
+		if (this.dataProcessor.dataAdapter.watchPatterns) {
+			closeDataWatcher = watchFiles({
+				cwd: this.dataProcessor.dataAdapter.watchPatternCwd ?? this.config.context,
+				patterns: this.dataProcessor.dataAdapter.watchPatterns,
+				delay: options.delay,
+				onError: options.onError,
+				onChange: () => applyUpdate({
+					updated: [],
+					removed: [],
+				}),
+			});
+		}
+
+		return async () => {
+			await closeSourceWatcher();
+			await closeDataWatcher?.();
+		};
 	}
 
 	async run(options: Project.RunOptions): Promise<Project.RunResult> {

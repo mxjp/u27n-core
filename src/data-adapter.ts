@@ -21,6 +21,18 @@ export interface DataAdapter {
 	reload(): Promise<boolean>;
 
 	/**
+	 * If specified, these patterns are used to watch translation data
+	 * files for changes. This may also contain absolute file paths.
+	 */
+	watchPatterns?: string[];
+
+	/**
+	 * If {@link watchPatterns} is specified, patterns are relative to
+	 * this directory. Default is the project context.
+	 */
+	watchPatternCwd?: string;
+
+	/**
 	 * True if there are unpersisted changes that were made through this adapter.
 	 */
 	get modified(): boolean;

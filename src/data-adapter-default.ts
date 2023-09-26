@@ -1,4 +1,5 @@
 import { open } from "node:fs/promises";
+import { isAbsolute } from "node:path";
 
 import { DataAdapter } from "./data-adapter.js";
 import { writeFile } from "./file-system.js";
@@ -19,8 +20,20 @@ export class DefaultDataAdapter implements DataAdapter {
 	/** Array of discarded fragments */
 	#obsolete: [string, DataAdapter.Fragment][] = [];
 
-	constructor(filename?: string) {
+	watchPatterns?: string[] | undefined;
+
+	/**
+	 * Create a new default data adapter.
+	 *
+	 * @param filename The absolute filename where to store data. If undefined, this data adapter is inert and can only be used for testing by using {@link importJson} and {@link exportJson}.
+	 * @param watchable If true, this adapter supports watching the translation data file for changes.
+	 */
+	constructor(filename?: string, watchable?: boolean) {
+		if (filename !== undefined && !isAbsolute(filename)) {
+			throw new TypeError("filename must be absolute");
+		}
 		this.#filename = filename;
+		this.watchPatterns = watchable && filename !== undefined ? [filename] : undefined;
 	}
 
 	get revision(): number {
