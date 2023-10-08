@@ -1,13 +1,8 @@
 import * as fs from "node:fs/promises";
-import { dirname, join, relative, sep } from "node:path";
+import { join, relative, sep } from "node:path";
 
 import chokidar from "chokidar";
 import createMatcher, { Matcher, scan } from "picomatch";
-
-export async function writeFile(filename: string, content: Buffer): Promise<void> {
-	await fs.mkdir(dirname(filename), { recursive: true });
-	await fs.writeFile(filename, content);
-}
 
 export interface WatchFileOptions {
 	cwd: string;

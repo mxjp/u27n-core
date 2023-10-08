@@ -1,8 +1,7 @@
-import { open } from "node:fs/promises";
-import { isAbsolute } from "node:path";
+import { mkdir, open, writeFile } from "node:fs/promises";
+import { dirname, isAbsolute } from "node:path";
 
 import { DataAdapter } from "../data-adapter.js";
-import { writeFile } from "../file-system.js";
 import { DiscardObsoleteFragmentType } from "../obsolete-handling.js";
 import { Source } from "../source.js";
 import { DataJson } from "./json-format.js";
@@ -167,7 +166,9 @@ export class DefaultDataAdapter implements DataAdapter {
 		}
 
 		const json = this.exportJson();
-		await writeFile(this.#filename, Buffer.from(JSON.stringify(json, null, "\t") + "\n", "utf-8"));
+
+		await mkdir(dirname(this.#filename), { recursive: true });
+		await writeFile(this.#filename, JSON.stringify(json, null, "\t") + "\n", "utf-8");
 		this.#modified = false;
 	}
 

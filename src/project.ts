@@ -1,9 +1,10 @@
-import { readFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { dirname } from "node:path";
 
 import { Config } from "./config.js";
 import { DataAdapter } from "./data-adapter.js";
 import { DataProcessor } from "./data-processor.js";
-import { FileChanges, findFiles, watchFiles, writeFile } from "./file-system.js";
+import { FileChanges, findFiles, watchFiles } from "./file-system.js";
 import { Diagnostic } from "./index.js";
 import { Manifest } from "./manifest.js";
 import { Plugin } from "./plugin.js";
@@ -180,7 +181,9 @@ export class Project {
 
 			for (const [locale, localeData] of data) {
 				const filename = Config.getOutputFilename(this.config.output.filename, locale);
-				await writeFile(filename, Buffer.from(JSON.stringify(localeData), "utf-8"));
+
+				await mkdir(dirname(filename), { recursive: true });
+				await writeFile(filename, JSON.stringify(localeData), "utf-8");
 				localeDataFilenames.set(locale, filename);
 			}
 		}
@@ -192,6 +195,7 @@ export class Project {
 				manifestFilename,
 				localeDataFilenames,
 			});
+			await mkdir(dirname(manifestFilename), { recursive: true });
 			await writeFile(manifestFilename, Buffer.from(Manifest.stringify(manifest), "utf-8"));
 		}
 	}
@@ -275,7 +279,7 @@ async function persistUpdate(filename: string, update: Source.UpdateResult): Pro
 	} else if (update.content !== undefined) {
 		await writeFile(filename, update.content);
 	} else if (update.textContent !== undefined) {
-		await writeFile(filename, Buffer.from(update.textContent, "utf-8"));
+		await writeFile(filename, update.textContent, "utf-8");
 	}
 }
 
