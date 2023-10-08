@@ -1,6 +1,6 @@
 {
 	"name": "@u27n/core",
-	"version": "3.0.7",
+	"version": "3.0.8",
 	"description": "Universal localization framework",
 	"keywords": [
 		"u27n",
@@ -30,9 +30,9 @@
 			"default": "./dist/cjs/runtime/index.js"
 		},
 		"./default-data-adapter": {
-			"module": "./dist/es/data-adapter-default.js",
-			"import": "./dist/es/data-adapter-default.js",
-			"default": "./dist/cjs/data-adapter-default.js"
+			"module": "./dist/es/default-data-adapter/index.js",
+			"import": "./dist/es/default-data-adapter/index.js",
+			"default": "./dist/cjs/default-data-adapter/index.js"
 		},
 		"./resources/": "./resources/"
 	},

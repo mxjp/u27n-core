@@ -1,10 +1,10 @@
 import { ExecutionContext } from "ava";
 
 import { DataAdapter } from "../../src/data-adapter.js";
-import { DataJson, DefaultDataAdapter, FragmentJson } from "../../src/data-adapter-default.js";
+import { DataJson, DefaultDataAdapter } from "../../src/default-data-adapter/index.js";
 
-export function verifyFragments(t: ExecutionContext, data: DataJson, partialExpected: Record<string, Partial<FragmentJson>>): void {
-	const expected: Record<string, FragmentJson> = {};
+export function verifyFragments(t: ExecutionContext, data: DataJson, partialExpected: Record<string, Partial<DataJson.Fragment>>): void {
+	const expected: Record<string, DataJson.Fragment> = {};
 	for (const fragmentId in partialExpected) {
 		expected[fragmentId] = {
 			...data.fragments[fragmentId],
@@ -14,7 +14,7 @@ export function verifyFragments(t: ExecutionContext, data: DataJson, partialExpe
 	t.deepEqual(data.fragments, expected);
 }
 
-export function fragment(data: Partial<FragmentJson>): FragmentJson {
+export function fragment(data: Partial<DataJson.Fragment>): DataJson.Fragment {
 	return {
 		enabled: true,
 		value: "test",

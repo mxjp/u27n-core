@@ -1,4 +1,3 @@
-import { Config } from "./config.js";
 import { DiscardObsoleteFragmentType } from "./obsolete-handling.js";
 import { LocaleData } from "./runtime/locale-data.js";
 import { Source } from "./source.js";
@@ -109,6 +108,8 @@ export namespace DataAdapter {
 	/**
 	 * Represents a translation value.
 	 *
+	 * It is garantueed that this type is json serializable and can be cloned using `structuredClone`.
+	 *
 	 * null represents an invalid value.
 	 */
 	export type Value = null | string | PluralValue;
@@ -127,10 +128,6 @@ export namespace DataAdapter {
 		value: Value;
 		/** When this value was last modified in milliseconds since the UNIX epoch. */
 		modified: number;
-	}
-
-	export interface CreateContext {
-		config: Config;
 	}
 
 	/**

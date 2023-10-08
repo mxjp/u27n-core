@@ -2,7 +2,6 @@ import { readFile } from "node:fs/promises";
 
 import { Config } from "./config.js";
 import { DataAdapter } from "./data-adapter.js";
-import { DefaultDataAdapter } from "./data-adapter-default.js";
 import { DataProcessor } from "./data-processor.js";
 import { FileChanges, findFiles, watchFiles, writeFile } from "./file-system.js";
 import { Diagnostic } from "./index.js";
@@ -231,12 +230,16 @@ export class Project {
 	static async create(options: Project.Options): Promise<Project> {
 		const plugins: Plugin[] = [];
 
+		let setupDone = false;
 		let customDataAdapter: DataAdapter | undefined = undefined;
 		const context: Plugin.Context = {
 			config: options.config,
 
 			setDataAdapter(dataAdapter) {
-				if (dataAdapter !== undefined) {
+				if (setupDone) {
+					throw new Error("data adapter can only be set while setting up plugins.");
+				}
+				if (customDataAdapter !== undefined) {
 					throw new Error("only one custom data adapter can be set.");
 				}
 				customDataAdapter = dataAdapter;
@@ -250,8 +253,16 @@ export class Project {
 			plugins.push(plugin);
 		}
 
+		setupDone = true;
+
+		let dataAdapter: DataAdapter | undefined = customDataAdapter;
+		if (dataAdapter === undefined) {
+			const module = await import("./default-data-adapter/adapter.js");
+			dataAdapter = new module.DefaultDataAdapter(options.config.data);
+		}
+
 		const dataProcessor = new DataProcessor({
-			dataAdapter: customDataAdapter ?? new DefaultDataAdapter(options.config.data),
+			dataAdapter,
 		});
 
 		return new Project(options, dataProcessor, plugins);

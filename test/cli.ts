@@ -4,7 +4,7 @@ import { join, resolve } from "node:path";
 import test from "ava";
 
 import { Config } from "../src/config.js";
-import { DataJson } from "../src/data-adapter-default.js";
+import { DataJson } from "../src/default-data-adapter/index.js";
 import { Diagnostic, getDiagnosticMessage } from "../src/diagnostics.js";
 import { Manifest } from "../src/manifest.js";
 import { LocaleData } from "../src/runtime/index.js";

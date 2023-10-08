@@ -1,10 +1,11 @@
 import { open } from "node:fs/promises";
 import { isAbsolute } from "node:path";
 
-import { DataAdapter } from "./data-adapter.js";
-import { writeFile } from "./file-system.js";
-import { DiscardObsoleteFragmentType } from "./obsolete-handling.js";
-import { Source } from "./source.js";
+import { DataAdapter } from "../data-adapter.js";
+import { writeFile } from "../file-system.js";
+import { DiscardObsoleteFragmentType } from "../obsolete-handling.js";
+import { Source } from "../source.js";
+import { DataJson } from "./json-format.js";
 
 export class DefaultDataAdapter implements DataAdapter {
 	#filename: string | undefined;
@@ -40,8 +41,16 @@ export class DefaultDataAdapter implements DataAdapter {
 		return this.#revision;
 	}
 
+	/**
+	 * Import translation data from it's json representation.
+	 *
+	 * This will increment the {@link revision}.
+	 */
 	importJson(data: DataJson): void {
-		function fragmentFromJson(fragment: FragmentJson): DataAdapter.Fragment {
+		if (data.version !== 1) {
+			throw new Error(`unsupported version: ${data.version}`);
+		}
+		function fragmentFromJson(fragment: DataJson.Fragment): DataAdapter.Fragment {
 			return {
 				value: fragment.value,
 				modified: Date.parse(fragment.modified),
@@ -85,11 +94,8 @@ export class DefaultDataAdapter implements DataAdapter {
 			try {
 				const stats = await file.stat();
 				if (stats.mtimeMs !== this.#lastMtimeMs) {
-					const data = JSON.parse(await file.readFile("utf-8")) as DataJson;
-					if (data.version !== 1) {
-						throw new Error(`unsupported version: ${data.version}`);
-					}
-					this.importJson(data);
+					this.#lastMtimeMs = stats.mtimeMs;
+					this.importJson(JSON.parse(await file.readFile("utf-8")) as DataJson);
 					return true;
 				}
 			} finally {
@@ -109,12 +115,17 @@ export class DefaultDataAdapter implements DataAdapter {
 		return this.#modified;
 	}
 
+	/**
+	 * Export translation data to it's json representation.
+	 *
+	 * This will not clear the {@link modified} flag. To clear it, use {@link clearModified}.
+	 */
 	exportJson(): DataJson {
 		function byKey([a]: [string, unknown], [b]: [string, unknown]) {
 			return a > b ? 1 : (a < b ? -1 : 0);
 		}
 
-		function fragmentToJson(fragment: DataAdapter.Fragment): FragmentJson {
+		function fragmentToJson(fragment: DataAdapter.Fragment): DataJson.Fragment {
 			return {
 				value: fragment.value,
 				modified: new Date(fragment.modified).toISOString(),
@@ -160,6 +171,9 @@ export class DefaultDataAdapter implements DataAdapter {
 		this.#modified = false;
 	}
 
+	/**
+	 * Clear the {@link modified} flag.
+	 */
 	clearModified(): void {
 		this.#modified = false;
 	}
@@ -269,21 +283,4 @@ export class DefaultDataAdapter implements DataAdapter {
 		}
 		this.#modified = true;
 	}
-}
-
-export interface DataJson {
-	version: 1;
-	fragments: Record<string, FragmentJson>;
-	obsolete: [string, FragmentJson][];
-}
-
-export interface FragmentJson extends TranslationJson {
-	sourceId: string;
-	enabled: boolean;
-	translations: Record<string, TranslationJson>;
-}
-
-export interface TranslationJson {
-	value: DataAdapter.Value;
-	modified: string;
 }
