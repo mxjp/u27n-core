@@ -1,1 +1,1 @@
-export * from "./dist/es/data-adapter-default";
+export * from "./dist/es/default-data-adapter";
