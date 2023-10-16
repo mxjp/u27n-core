@@ -8,3 +8,4 @@ export * from "./locale.js";
 export * from "./locale-code.js";
 export * from "./locale-data.js";
 export * from "./pluralization.js";
+export * from "./signals.js";

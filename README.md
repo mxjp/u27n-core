@@ -14,6 +14,9 @@ U27N is a _universal internationalization_ framework that aims to provide an end
     + [Interpolation & Formatting](#interpolation--formatting)
     + [Pluralization](#pluralization)
   + [Concurrent Locales](#concurrent-locales)
+  + [Setting the document locale](#setting-the-document-locale)
+  + [Usage with SolidJS](#usage-with-solidjs)
+  + [Usage with React / Preact](#usage-with-react--preact)
 + [Toolchain API](#toolchain-api)
   + [Configuration](#configuration-1)
   + [Plugins](#plugins)
@@ -256,6 +259,56 @@ function renderPage(t) {
 server.onRequest(user => {
   return renderPage(locales[user.locale] ?? locales.en);
 });
+```
+
+## Setting the document locale
+A web page should indicate it's current language by setting the **lang** attribute.
+```ts
+u27n.updateHandlers.add(() => {
+  document.documentElement.lang = u27n.locale?.code ?? "";
+});
+```
+
+## Usage with SolidJS
+```tsx
+import { createSignal } from "solid-js";
+import { wrapSignalT } from "@u27n/core/runtime";
+
+// Create a signal that is updated when the locale changes:
+const [useLocale, setLocale] = createSignal(u27n.locale);
+u27n.updateHandlers.add(() => {
+  setLocale(u27n.locale);
+});
+
+// Wrap the translation function to use the locale signal:
+export const t = wrapSignalT(context.t, useLocale);
+
+function Example() {
+  return <h1>{t("Hello World!")}</h1>;
+}
+```
+
+## Usage with React / Preact
+```tsx
+// When using react:
+import { signal } from "@preact/signals-react";
+// When using preact:
+import { signal } from "@preact/signals";
+
+import { wrapSignalT } from "@u27n/core/runtime";
+
+// Create a signal that is updated when the locale changes:
+const localeSignal = signal(u27n.locale);
+u27n.updateHandlers.add(() => {
+  localeSignal.value = u27n.locale;
+});
+
+// Wrap the translation function to use the locale signal:
+export const t = wrapSignalT(context.t, () => localeSignal.value);
+
+function Example() {
+  return <h1>{t("Hello World!")}</h1>;
+}
 ```
 
 <br>
