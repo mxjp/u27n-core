@@ -1,5 +1,8 @@
 import { Source } from "../source.js";
 
+/**
+ * Utility for storing the relation between source ids and fragment ids.
+ */
 export class SourceFragmentMap {
 	readonly #sourceToFragments = new Map<string, Set<string>>();
 	readonly #fragmentToSources = new Map<string, Set<string>>();

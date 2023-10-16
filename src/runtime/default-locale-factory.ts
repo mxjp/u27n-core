@@ -7,6 +7,11 @@ import { PluralProcessor } from "./pluralization.js";
 
 type Plurals = Record<`plurals_${string}`, PluralProcessor>;
 
+/**
+ * The default locale factory.
+ *
+ * This is not used automatically to reduce the amount of code that needs to be shipped when this is not needed.
+ */
 export function defaultLocaleFactory(controller: U27N, code: string): Locale {
 	return new Locale({
 		controller,

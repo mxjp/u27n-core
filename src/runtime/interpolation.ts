@@ -9,12 +9,27 @@ export interface Formatter<T = any> {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type Formatters = Map<any, Formatter>;
 
+/**
+ * A function to apply interpolation.
+ */
 export interface InterpolationProcessor {
+	/**
+	 * @param value The value to apply interpolation to.
+	 * @param fields An object with all available fields.
+	 * @param locale The current locale instance.
+	 * @param formatters A map with additional formatters.
+	 */
 	(value: string, fields: InterpolationFields, locale: Locale, formatters?: Formatters): string;
 }
 
+/**
+ * An object with all available fields.
+ */
 export type InterpolationFields = Record<string, unknown>;
 
+/**
+ * Create an interpolation processor that uses the default syntax.
+ */
 export function createInterpolationProcessor(controller: U27N): InterpolationProcessor {
 	const hasOwnProperty = Object.prototype.hasOwnProperty;
 	return (value, fields, locale, formatters) => {

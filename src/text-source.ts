@@ -3,6 +3,9 @@ import { LineMap } from "@mpt/line-map";
 import { Source } from "./source.js";
 import { SourceBase } from "./source-base.js";
 
+/**
+ * Base class for sources that contain text content.
+ */
 export class TextSource<F extends Source.Fragment = Source.Fragment> extends SourceBase<F> {
 	readonly content: string;
 
