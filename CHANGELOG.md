@@ -1,5 +1,8 @@
 # Changelog
 
+## 3.1
++ Add `wrapSignalT` runtime utility.
+
 ## 3.0
 + **Breaking:** Rename `SourceUpdates` to `TextReplacements`.
 + **Breaking:** Rewrite source interface to support different types of content.
