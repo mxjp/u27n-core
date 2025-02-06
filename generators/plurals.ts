@@ -1,12 +1,36 @@
-/* eslint-disable import/extensions */
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { join } from "node:path";
-
 import jsStringEscape from "js-string-escape";
 import JSON5 from "json5";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { Conditions } from "./utility/conditions.js";
 
-import type { LocaleSet, PluralFormEqualsRule, PluralFormExcludeRule, PluralFormRangeRule, PluralFormRule } from "../resources/plurals";
-import { Conditions } from "./utility/conditions";
+export interface PluralFormEqualsRule {
+	mod?: number;
+	eq: number[];
+}
+
+export interface PluralFormRangeRule {
+	mod?: number;
+	min: number;
+	max: number;
+}
+
+export interface PluralFormExcludeRule {
+	exclude: number[];
+}
+
+export type PluralFormRule
+	= PluralFormEqualsRule
+	| PluralFormRangeRule
+	| PluralFormExcludeRule;
+
+export type PluralForm = "default" | PluralFormRule[];
+
+export interface LocaleSet {
+	locales: string[];
+	forms: PluralForm[];
+}
 
 const processorModuleTemplate = (
 	locales: string[],
@@ -35,15 +59,16 @@ ${sets.map(set => set.locales.map(locale => `\t["${jsStringEscape(locale)}", { f
 `;
 
 (async () => {
-	const resourceFilename = join(__dirname, "../resources/plurals.json5");
+	const ctx = dirname(fileURLToPath(import.meta.url));
+	const resourceFilename = join(ctx, "../resources/plurals.json5");
 
 	const localeSets = JSON5.parse(await readFile(resourceFilename, "utf-8")) as LocaleSet[];
 	const locales = new Set<string>();
 
-	const runtimeOutputDir = join(__dirname, "../src/runtime/generated");
+	const runtimeOutputDir = join(ctx, "../src/runtime/generated");
 	await mkdir(runtimeOutputDir, { recursive: true });
 
-	const outputDir = join(__dirname, "../src/generated");
+	const outputDir = join(ctx, "../src/generated");
 	await mkdir(outputDir, { recursive: true });
 
 	for (let i = 0; i < localeSets.length; i++) {

@@ -1,10 +1,11 @@
+/.editorconfig
+/.eslint*
 /.github
+/.npm*
+/ava*
 /generators
+/generators_out
 /node_modules
 /test
 /test_out
-/.editorconfig
-/.eslint*
-/.npm*
-/ava*
 /tsconfig*

@@ -1,5 +1,8 @@
 # Changelog
 
+## 4.0
++ **Breaking:** Drop CommonJS support.
+
 ## 3.1
 + Add `wrapSignalT` runtime utility.
 

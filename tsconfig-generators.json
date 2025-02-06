@@ -1,10 +1,10 @@
 {
 	"extends": "./tsconfig.json",
 	"compilerOptions": {
-		"module": "CommonJS"
+		"rootDir": "generators",
+		"outDir": "generators_out"
 	},
 	"include": [
-		"./generators",
-		"./resources"
+		"./generators"
 	]
 }

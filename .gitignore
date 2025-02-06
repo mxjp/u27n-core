@@ -1,6 +1,7 @@
-/node_modules
-/src/runtime/generated
-/src/generated
 /dist
-/test_out
+/generators_out
+/node_modules
+/src/generated
+/src/runtime/generated
 /test_data
+/test_out
